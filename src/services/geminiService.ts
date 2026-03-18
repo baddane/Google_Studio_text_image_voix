@@ -13,7 +13,7 @@ export interface VideoScript {
 }
 
 const getAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY || "";
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
   return new GoogleGenAI({ apiKey });
 };
 
@@ -90,7 +90,7 @@ export async function generateYouTubeScript(blogContent: string): Promise<VideoS
   const ai = getAI();
   const model = "gemini-3.1-flash-lite-preview";
   
-  if (!process.env.GEMINI_API_KEY) {
+  if (!import.meta.env.VITE_GEMINI_API_KEY) {
     throw new Error("Clé API Gemini manquante. Veuillez la configurer dans les paramètres.");
   }
 

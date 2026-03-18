@@ -65,7 +65,7 @@ export default function App() {
   const handleGenerate = async () => {
     if (!blogContent.trim()) return;
     
-    if (!process.env.GEMINI_API_KEY) {
+    if (!import.meta.env.VITE_GEMINI_API_KEY) {
       setError("Clé API Gemini manquante. Veuillez configurer GEMINI_API_KEY dans les paramètres.");
       return;
     }
