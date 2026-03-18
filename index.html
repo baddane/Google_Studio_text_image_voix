@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Google AI Studio App</title>
+  </head>
+  <body>
+    <script>
+      (function() {
+        // Try to make window.fetch writable if it's configurable
+        try {
+          var _fetch = window.fetch;
+          Object.defineProperty(window, 'fetch', {
+            value: _fetch,
+            writable: true,
+            configurable: true
+          });
+        } catch (e) {
+          // If it's not configurable, we can't do much about window.fetch directly
+        }
+
+        var overrides = new Map();
+        var mockGlobal = new Proxy(window, {
+          get: function(target, prop) {
+            if (prop === 'global' || prop === 'globalThis' || prop === 'self' || prop === 'window') return mockGlobal;
+            if (overrides.has(prop)) return overrides.get(prop);
+            
+            var value = Reflect.get(target, prop, target);
+            if (typeof value === 'function') {
+              try {
+                return value.bind(target);
+              } catch (e) {
+                return value;
+              }
+            }
+            return value;
+          },
+          set: function(target, prop, value) {
+            try {
+              return Reflect.set(target, prop, value, target);
+            } catch (e) {
+              overrides.set(prop, value);
+              return true;
+            }
+          },
+          has: function(target, prop) {
+            return overrides.has(prop) || Reflect.has(target, prop);
+          }
+        });
+
+        try {
+          Object.defineProperty(window, 'global', { value: mockGlobal, configurable: true, writable: true });
+        } catch (e) {
+          window.global = mockGlobal;
+        }
+        
+        try {
+          Object.defineProperty(window, 'globalThis', { value: mockGlobal, configurable: true, writable: true });
+        } catch (e) {
+          // globalThis might be non-configurable
+        }
+
+        if (typeof process === 'undefined') {
+          window.process = { env: { NODE_ENV: 'development' } };
+        }
+      })();
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
