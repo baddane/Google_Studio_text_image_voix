@@ -174,16 +174,22 @@ export async function generateYouTubeScript(blogContent: string): Promise<VideoS
             🎨 Pour chaque scène, fournis :
             1. Un titre de scène ACCROCHEUR (style titre YouTube).
             2. Le script parlé (voix-off) — dynamique et captivant.
-            3. Des prompts d'illustration en ANGLAIS — AUTANT QUE NÉCESSAIRE pour illustrer TOUTE la scène :
-               ⚠️ RÈGLE CRITIQUE : Lis le script de la scène et crée UNE IMAGE pour chaque moment clé, idée, ou changement de sujet dans le discours.
-               - Si le script contient 2 idées → 2 images.
-               - Si le script contient 5 moments distincts → 5 images.
-               - Si le script est court et simple → 1 ou 2 images suffisent.
-               - Si le script est long et riche → 4, 5, 6 images ou plus.
-               Le but : chaque image correspond à un PASSAGE PRÉCIS du script. L'ensemble des images raconte visuellement TOUT le contenu de la scène, du début à la fin.
-               Toutes les images doivent être VISUELLEMENT DIFFÉRENTES : décor différent, pose différente, émotion différente, éléments différents. JAMAIS d'images similaires.
+            3. Des prompts d'illustration en ANGLAIS — ⚠️ PAS 3 IMAGES PAR DÉFAUT ! Le nombre d'images VARIE selon la scène :
 
-               Pour chaque prompt (max 3 phrases) :
+               📐 MÉTHODE OBLIGATOIRE POUR DÉTERMINER LE NOMBRE D'IMAGES :
+               - Découpe le script de la scène en PHRASES ou GROUPES DE PHRASES qui abordent chacun UNE idée distincte.
+               - Crée EXACTEMENT 1 prompt d'illustration PAR idée/moment identifié.
+               - Résultat attendu : entre 2 et 8 images par scène selon la longueur et la richesse du script.
+
+               ❌ INTERDIT : Toujours mettre 3 images. C'est FAUX si le script contient plus ou moins de 3 idées.
+               ✅ CORRECT : Compter les idées distinctes dans le script et créer autant de prompts.
+
+               Exemple : Si le script dit "D'abord on parle de X. Ensuite Y arrive. Puis Z se passe. Et enfin W conclut." → 4 images (une par idée).
+
+               Chaque image = un PASSAGE PRÉCIS du script. L'ensemble couvre TOUT le contenu de la scène.
+               Toutes les images doivent être VISUELLEMENT DIFFÉRENTES : décor, pose, émotion, éléments différents.
+
+               Pour chaque prompt (2-3 phrases max par prompt) :
                - NE PAS inclure de description du personnage principal (ajouté automatiquement).
                - Décris : l'action PRÉCISE, le décor, la pose/émotion du personnage, les éléments visuels.
                - Inclure UN SEUL MOT EN FRANÇAIS comme texte doodle — le mot le plus pertinent et percutant selon le contexte du script (ex: une émotion, une réaction, un mot-clé du sujet). MAXIMUM 1 mot, jamais plus. Pas de phrase, pas de mot composé.
@@ -211,7 +217,7 @@ export async function generateYouTubeScript(blogContent: string): Promise<VideoS
                   illustrationPrompts: { 
                     type: Type.ARRAY,
                     items: { type: Type.STRING },
-                    description: "Illustration prompts — as many as needed to cover the full scene script. One prompt per key moment/idea in the script."
+                    description: "VARIABLE number of illustration prompts (2 to 8). One prompt per distinct idea/moment in the scene script. Do NOT default to 3 — count the actual ideas in the script."
                   },
                 },
                 required: ["title", "script", "illustrationPrompts"],
