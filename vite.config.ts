@@ -14,6 +14,9 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env': JSON.stringify({}),
     },
+    build: {
+      chunkSizeWarningLimit: 1000,
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
