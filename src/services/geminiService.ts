@@ -149,7 +149,7 @@ export async function generateYouTubeScript(blogContent: string): Promise<VideoS
                Pour chaque prompt (max 3 phrases) :
                - NE PAS inclure de description du personnage principal (ajouté automatiquement).
                - Décris : l'action PRÉCISE, le décor, la pose/émotion du personnage, les éléments visuels.
-               - Inclure UN SEUL MOT simple EN FRANÇAIS comme texte doodle (ex: "QUOI ?!", "OUF !", "TOP !", "NON !", "OUI !"). MAXIMUM 1 mot, jamais plus. Pas de phrase, pas de mot composé, pas de mot long.
+               - Inclure UN SEUL MOT EN FRANÇAIS comme texte doodle — le mot le plus pertinent et percutant selon le contexte du script (ex: une émotion, une réaction, un mot-clé du sujet). MAXIMUM 1 mot, jamais plus. Pas de phrase, pas de mot composé.
                - Style : doodle art, croquis dessiné à la main, traits noirs sur fond blanc/coloré.
 
             📝 Contenu du Blog à transformer :
@@ -225,15 +225,15 @@ DOODLE ART STYLE RULES:
 - Hand-drawn sketch aesthetic with bold black ink outlines on a clean white or lightly colored background.
 - Playful hand-drawn elements around the character: arrows, stars, exclamation marks, underlines, small icons, squiggles.
 - Whimsical, fun, energetic feel — like a YouTuber's whiteboard or notebook doodles.
-- Include ONLY 1 short French word as doodle text (e.g. "QUOI ?!", "OUF !", "TOP !"). MAXIMUM 1 word. NEVER write long words or sentences — AI models make spelling errors on long text.
+- Include ONLY 1 French word as doodle text — choose the most relevant and impactful word based on the scene context (e.g. a key emotion, reaction, or subject keyword). MAXIMUM 1 word. Keep it SHORT (3-6 letters max). NEVER write sentences or compound words — AI models make spelling errors on long text.
 - Selective color pops: use vibrant accent colors (red, blue, yellow) sparingly to highlight key elements against the mostly black & white sketch.
 - The character must look CONSISTENT across all images: same hair, same glasses, same drawing style.
 - Clean composition, not cluttered. White space is important in doodle art.
 - 4K quality, sharp lines, professional doodle illustration.
 
 CRITICAL — TEXT IN IMAGE:
-- MAXIMUM 1 word visible in the entire image. Keep it SHORT (3-5 letters max).
-- Only use simple, common French words: OUF, QUOI, NON, OUI, TOP, STOP, BOOM, WOW, AIDE, VRAI, FAUX.
+- MAXIMUM 1 word visible in the entire image. Keep it SHORT (3-6 letters max).
+- Choose the single most relevant French word that captures the essence of the scene.
 - NEVER write sentences, long words, or compound words — they WILL contain spelling errors.
 - Use doodle symbols (!, ?, ★, →, ✓, ✗) instead of extra words.`,
         },
