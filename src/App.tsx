@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { generateYouTubeScript, generateImage, generateSpeech, generateCapCutTutorial, VideoScript, CapCutTutorial } from './services/geminiService';
+import { generateYouTubeScript, generateImage, generateSpeech, generateCapCutTutorial, VideoScript, CapCutTutorial, SessionCost, onCostUpdate, getSessionCost, resetSessionCost } from './services/geminiService';
 import { 
   FileText, 
   Youtube, 
@@ -29,7 +29,9 @@ import {
   Scissors,
   Package,
   Save,
-  Clock
+  Clock,
+  Coins,
+  RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import HistoryPanel from './components/HistoryPanel';
@@ -66,6 +68,13 @@ export default function App() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>(() => getHistoryIndex());
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
+  const [sessionCost, setSessionCost] = useState<SessionCost>(getSessionCost());
+  const [showCostDetails, setShowCostDetails] = useState(false);
+
+  // Subscribe to cost updates
+  useEffect(() => {
+    return onCostUpdate(setSessionCost);
+  }, []);
 
   const voices = [
     { name: 'Puck', desc: 'Énergique & Dynamique — Idéal YouTube', tag: '🔥' },
@@ -992,6 +1001,65 @@ export default function App() {
         onLoad={handleLoadFromHistory}
         onDelete={handleDeleteFromHistory}
       />
+
+      {/* Cost Counter — Floating Widget */}
+      {sessionCost.totalTokens > 0 && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <div className="glass rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden min-w-[200px]">
+            <button
+              onClick={() => setShowCostDetails(!showCostDetails)}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
+            >
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <Coins className="w-4 h-4 text-emerald-500" />
+              </div>
+              <div className="text-left flex-1">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-white/40">Coût session</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-lg font-display font-bold text-slate-900 dark:text-white">
+                    ${sessionCost.totalCostUSD.toFixed(4)}
+                  </span>
+                  <span className="text-[10px] text-slate-400 dark:text-white/30 font-mono">
+                    {sessionCost.totalTokens.toLocaleString()} tok
+                  </span>
+                </div>
+              </div>
+              {showCostDetails ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronUp className="w-4 h-4 text-slate-400" />}
+            </button>
+
+            <AnimatePresence>
+              {showCostDetails && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="border-t border-slate-200 dark:border-white/10"
+                >
+                  <div className="px-4 py-3 space-y-2 max-h-[300px] overflow-y-auto">
+                    {sessionCost.details.map((d, i) => (
+                      <div key={i} className="flex items-center justify-between text-[10px]">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-600 dark:text-white/60">{d.operation}</span>
+                          <span className="text-slate-300 dark:text-white/20 font-mono">{d.totalTokens.toLocaleString()}</span>
+                        </div>
+                        <span className="font-mono text-emerald-600 dark:text-emerald-400">${d.costUSD.toFixed(4)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="px-4 py-2 border-t border-slate-200 dark:border-white/10">
+                    <button
+                      onClick={() => { resetSessionCost(); setShowCostDetails(false); }}
+                      className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-red-500 transition-colors uppercase tracking-widest"
+                    >
+                      <RotateCcw className="w-3 h-3" /> Reset
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
 
       {/* Background Decor */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">

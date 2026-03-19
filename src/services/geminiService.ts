@@ -1,5 +1,68 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 
+// ─── Token & Cost Tracking ───────────────────────────────────────────
+
+export interface TokenUsage {
+  promptTokens: number;
+  candidatesTokens: number;
+  totalTokens: number;
+  costUSD: number;
+  model: string;
+  operation: string;
+}
+
+export interface SessionCost {
+  totalTokens: number;
+  totalCostUSD: number;
+  details: TokenUsage[];
+}
+
+// Pricing per 1M tokens (USD) — source: https://ai.google.dev/gemini-api/docs/pricing
+const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+  'gemini-3.1-flash-lite-preview': { input: 0.25, output: 1.50 },
+  'gemini-2.5-flash-preview-tts':  { input: 0.30, output: 2.50 },
+  'gemini-2.5-flash-image':        { input: 0.30, output: 2.50 },
+  'gemini-2.5-flash':              { input: 0.30, output: 2.50 },
+};
+
+let _sessionCost: SessionCost = { totalTokens: 0, totalCostUSD: 0, details: [] };
+let _costListeners: Array<(cost: SessionCost) => void> = [];
+
+export function getSessionCost(): SessionCost {
+  return _sessionCost;
+}
+
+export function resetSessionCost(): void {
+  _sessionCost = { totalTokens: 0, totalCostUSD: 0, details: [] };
+  _costListeners.forEach(fn => fn(_sessionCost));
+}
+
+export function onCostUpdate(listener: (cost: SessionCost) => void): () => void {
+  _costListeners.push(listener);
+  return () => { _costListeners = _costListeners.filter(fn => fn !== listener); };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function trackUsage(response: any, model: string, operation: string): void {
+  const meta = response?.usageMetadata;
+  if (!meta) return;
+
+  const pricing = MODEL_PRICING[model] || { input: 0.30, output: 2.50 };
+  const promptTokens = meta.promptTokenCount || 0;
+  const candidatesTokens = meta.candidatesTokenCount || 0;
+  const totalTokens = meta.totalTokenCount || (promptTokens + candidatesTokens);
+  const costUSD = (promptTokens * pricing.input + candidatesTokens * pricing.output) / 1_000_000;
+
+  const usage: TokenUsage = { promptTokens, candidatesTokens, totalTokens, costUSD, model, operation };
+  _sessionCost.totalTokens += totalTokens;
+  _sessionCost.totalCostUSD += costUSD;
+  _sessionCost.details.push(usage);
+
+  _costListeners.forEach(fn => fn({ ..._sessionCost }));
+}
+
+// ─── Types ───────────────────────────────────────────────────────────
+
 export interface Scene {
   title: string;
   script: string;
@@ -56,6 +119,8 @@ ${text}`;
       },
     },
   });
+
+  trackUsage(response, model, 'TTS');
 
   const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
   if (!base64Audio) {
@@ -225,6 +290,8 @@ export async function generateYouTubeScript(blogContent: string, durationMinutes
       },
     });
 
+    trackUsage(response, model, 'Script');
+
     let text = response.text;
     if (!text) {
       throw new Error("Le modèle n'a pas renvoyé de texte.");
@@ -317,6 +384,8 @@ CRITICAL — TEXT IN IMAGE:
       },
     },
   });
+
+  trackUsage(response, model, 'Image');
 
   if (!response.candidates?.[0]?.content?.parts) {
     throw new Error("No image generated");
@@ -416,6 +485,8 @@ Réponds en JSON structuré.`
       }
     }
   });
+
+  trackUsage(response, model, 'CapCut');
 
   let text = response.text;
   if (!text) throw new Error("Pas de tutoriel généré.");
