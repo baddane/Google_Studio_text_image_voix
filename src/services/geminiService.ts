@@ -229,7 +229,12 @@ DOODLE ART STYLE RULES:
 - Selective color pops: use vibrant accent colors (red, blue, yellow) sparingly to highlight key elements against the mostly black & white sketch.
 - The character must look CONSISTENT across all images: same hair, same glasses, same drawing style.
 - Clean composition, not cluttered. White space is important in doodle art.
-- 4K quality, sharp lines, professional doodle illustration.`,
+- 4K quality, sharp lines, professional doodle illustration.
+
+CRITICAL — ZERO SPELLING ERRORS:
+- Every single word visible in the image MUST be spelled correctly in French. No exceptions.
+- Double-check accents (é, è, ê, à, ù, ç, ô, î, â) — they are mandatory in French.
+- If unsure about spelling, do NOT include the word. Fewer words with perfect spelling is better than more words with errors.`,
         },
       ],
     },
