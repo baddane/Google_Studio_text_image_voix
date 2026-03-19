@@ -139,11 +139,17 @@ export async function generateYouTubeScript(blogContent: string): Promise<VideoS
             🎨 Pour chaque scène, fournis :
             1. Un titre de scène ACCROCHEUR (style titre YouTube).
             2. Le script parlé (voix-off) — dynamique et captivant.
-            3. TROIS (3) prompts d'illustration en ANGLAIS (max 3 phrases chacun) :
-               - Chaque prompt décrit UNE ACTION ou UNE SCÈNE précise du script.
-               - NE PAS inclure de description du personnage principal (il sera ajouté automatiquement).
-               - Décris : l'action, le décor, l'ambiance, les éléments visuels autour du personnage.
-               - Inclure UN MOT-CLÉ ou UNE COURTE PHRASE EN FRANÇAIS sans faute d'orthographe, en rapport avec la scène, qui sera affiché comme texte doodle dans l'image (ex: "INCROYABLE !", "Quoi ?!", "Astuce !", "Le saviez-vous ?").
+            3. TROIS (3) prompts d'illustration en ANGLAIS qui forment un MINI-SCÉNARIO SÉQUENTIEL :
+               ⚠️ RÈGLE CRITIQUE : Les 3 images racontent une PROGRESSION NARRATIVE du script.
+               - Image 1 = le DÉBUT du discours (situation initiale, question, accroche).
+               - Image 2 = le MILIEU (le problème, la tension, le twist, la révélation).
+               - Image 3 = la FIN (la solution, la réaction, la conclusion).
+               Les 3 images doivent être VISUELLEMENT DIFFÉRENTES : décor différent, pose différente, émotion différente, éléments différents. JAMAIS 3 images similaires.
+
+               Pour chaque prompt (max 3 phrases) :
+               - NE PAS inclure de description du personnage principal (ajouté automatiquement).
+               - Décris : l'action PRÉCISE, le décor, la pose/émotion du personnage, les éléments visuels.
+               - Inclure UN MOT-CLÉ ou COURTE PHRASE EN FRANÇAIS sans faute d'orthographe comme texte doodle (ex: "INCROYABLE !", "Quoi ?!", "Astuce !", "Le saviez-vous ?").
                - Style : doodle art, croquis dessiné à la main, traits noirs sur fond blanc/coloré.
 
             📝 Contenu du Blog à transformer :
