@@ -249,11 +249,15 @@ export async function generateYouTubeScript(blogContent: string, durationMinutes
             2. Le script parlé (voix-off) — ~${Math.round((durationMinutes * 150) / Math.max(2, Math.round(durationMinutes)))} mots par scène.
             3. Entre 3 et 6 prompts d'illustration EN ANGLAIS par scène :
                - Découpe le script de la scène par idée distincte → 1 prompt par idée.
-               - Chaque prompt décrit : action précise, décor, pose/émotion, éléments visuels (2-3 phrases).
+               - ⚠️ CHAQUE PROMPT DOIT ÊTRE ULTRA-SPÉCIFIQUE au contenu du script à cet instant précis. Pas de description générique !
+               - Cite les ÉLÉMENTS CONCRETS mentionnés dans le script : chiffres, objets, concepts, lieux, actions spécifiques.
+               - Exemple MAUVAIS : "A woman looking excited about technology" (trop vague)
+               - Exemple BON : "A woman pointing at a giant smartphone screen showing a 400% growth chart, surrounded by floating app icons and dollar signs, with 'BOOM' as doodle text"
+               - Chaque prompt décrit : action précise liée au contenu, objets/symboles du sujet, pose/émotion, éléments visuels concrets (2-3 phrases).
                - NE PAS décrire le personnage principal (ajouté automatiquement).
                - Inclure UN SEUL MOT FRANÇAIS comme texte doodle (ex: "RÊVE", "BOOM"). Max 1 mot, 3-6 lettres.
                - Style : doodle art, croquis dessiné à la main, traits noirs.
-               - Toutes les images doivent être VISUELLEMENT DIFFÉRENTES.
+               - Toutes les images doivent être VISUELLEMENT DIFFÉRENTES et refléter des moments DIFFÉRENTS du script.
 
             📝 Contenu du Blog à transformer :
             ${blogContent}`,
@@ -346,7 +350,11 @@ export async function generateYouTubeScript(blogContent: string, durationMinutes
 export async function generateImage(prompt: string, scriptContext?: string): Promise<string> {
   const ai = getAI();
   const model = "gemini-2.5-flash-image";
-  
+
+  const contextBlock = scriptContext
+    ? `\n\nSCENE SCRIPT CONTEXT (the voiceover for this scene — your illustration MUST visually match this content):\n"${scriptContext}"\n`
+    : '';
+
   const response = await ai.models.generateContent({
     model,
     contents: {
@@ -354,7 +362,9 @@ export async function generateImage(prompt: string, scriptContext?: string): Pro
         {
           text: `Create a hand-drawn doodle-style illustration in 16:9 format.
 
-SCENE TO ILLUSTRATE: ${prompt}
+SPECIFIC MOMENT TO ILLUSTRATE: ${prompt}
+${contextBlock}
+IMPORTANT: The illustration must directly represent the KEY IDEAS and SUBJECT MATTER described above. Do NOT create a generic or abstract image — illustrate the SPECIFIC topic, concept, or action mentioned in the scene.
 
 MAIN CHARACTER (MUST appear in every image with IDENTICAL appearance):
 A confident female content creator with long dark hair and black-framed glasses. Drawn in clean doodle/sketch style with bold black ink outlines. Expressive face, dynamic pose matching the scene. She has a warm, engaging personality visible through her expressions.
@@ -368,6 +378,7 @@ DOODLE ART STYLE RULES:
 - The character must look CONSISTENT across all images: same hair, same glasses, same drawing style.
 - Clean composition, not cluttered. White space is important in doodle art.
 - 4K quality, sharp lines, professional doodle illustration.
+- Include VISUAL ELEMENTS that directly relate to the topic (e.g. if talking about money → draw coins/bills, if about technology → draw devices/screens, if about travel → draw landmarks/planes).
 
 CRITICAL — TEXT IN IMAGE:
 - MAXIMUM 1 word visible in the entire image. Keep it SHORT (3-6 letters max).
