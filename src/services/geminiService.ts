@@ -132,7 +132,7 @@ export async function generateSpeech(
   return pcmToWavDataUrl(merged);
 }
 
-export async function generateYouTubeScript(blogContent: string): Promise<VideoScript> {
+export async function generateYouTubeScript(blogContent: string, durationMinutes: number = 5): Promise<VideoScript> {
   const ai = getAI();
   const model = "gemini-3.1-flash-lite-preview";
   
@@ -151,7 +151,9 @@ export async function generateYouTubeScript(blogContent: string): Promise<VideoS
             text: `Tu es un SCÉNARISTE YOUTUBE de génie, spécialiste des vidéos virales francophones.
             Ton style : MrBeast meets Squeezie — ultra-dynamique, captivant dès la première seconde, impossible à quitter.
 
-            TRANSFORME l'article suivant en un script vidéo YouTube de 5 minutes EXPLOSIF.
+            TRANSFORME l'article suivant en un script vidéo YouTube de ${durationMinutes} minute${durationMinutes > 1 ? 's' : ''} EXPLOSIF.
+
+            📏 LONGUEUR DU SCRIPT : Le script TOTAL (toutes scènes combinées) doit contenir environ ${durationMinutes * 150} mots (environ 150 mots par minute de vidéo). C'est CRUCIAL pour que la voix-off dure bien ${durationMinutes} minute${durationMinutes > 1 ? 's' : ''}.
 
             🎬 RÈGLES D'OR DU SCRIPT :
             - ACCROCHE DE FOU : La première phrase doit être un HOOK irrésistible (question choc, stat incroyable, provocation, cliffhanger). Le spectateur doit se dire "QUOI ?! Je DOIS voir la suite".

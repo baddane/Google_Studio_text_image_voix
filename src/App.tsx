@@ -45,6 +45,7 @@ import {
 
 export default function App() {
   const [blogContent, setBlogContent] = useState('');
+  const [videoDuration, setVideoDuration] = useState(5);
   const [loading, setLoading] = useState(false);
   const [videoScript, setVideoScript] = useState<VideoScript | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +99,7 @@ export default function App() {
       if (session?.videoScript) {
         setVideoScript(session.videoScript);
         setBlogContent(session.blogContent || '');
+        setVideoDuration(session.videoDuration || 5);
         setSelectedVoice(session.selectedVoice || 'Puck');
         setCapCutTutorial(session.capCutTutorial);
         setAudioDuration(session.audioDuration || 0);
@@ -113,6 +115,7 @@ export default function App() {
     if (!videoScript) return;
     saveCurrentSession({
       blogContent,
+      videoDuration,
       selectedVoice,
       videoScript,
       capCutTutorial,
@@ -120,12 +123,13 @@ export default function App() {
       generatedImages,
       audioUrl,
     });
-  }, [videoScript, generatedImages, audioUrl, capCutTutorial, audioDuration, blogContent, selectedVoice]);
+  }, [videoScript, generatedImages, audioUrl, capCutTutorial, audioDuration, blogContent, videoDuration, selectedVoice]);
 
   const handleSaveToHistory = async () => {
     if (!videoScript) return;
     const result = await saveProjectToHistory({
       blogContent,
+      videoDuration,
       selectedVoice,
       videoScript,
       capCutTutorial,
@@ -147,6 +151,7 @@ export default function App() {
     if (!data) return;
     setVideoScript(data.videoScript);
     setBlogContent(data.blogContent || '');
+    setVideoDuration(data.videoDuration || 5);
     setSelectedVoice(data.selectedVoice || 'Puck');
     setCapCutTutorial(data.capCutTutorial);
     setAudioDuration(data.audioDuration || 0);
@@ -178,7 +183,7 @@ export default function App() {
     setCapCutTutorial(null);
     setAudioDuration(0);
     try {
-      const result = await generateYouTubeScript(blogContent);
+      const result = await generateYouTubeScript(blogContent, videoDuration);
       setVideoScript(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue lors de la génération.');
@@ -433,6 +438,25 @@ export default function App() {
                   placeholder="Collez votre article ici..."
                   className="relative w-full h-[400px] p-6 bg-slate-50 dark:bg-[#121212] border border-slate-200 dark:border-white/10 rounded-2xl focus:border-indigo-500 outline-none transition-all resize-none text-slate-700 dark:text-white/80 leading-relaxed font-mono text-sm"
                 />
+              </div>
+
+              <div className="flex items-center gap-4">
+                <label className="text-xs font-bold text-slate-500 dark:text-white/40 uppercase tracking-widest whitespace-nowrap">
+                  Durée vidéo
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={1}
+                    max={15}
+                    value={videoDuration}
+                    onChange={(e) => setVideoDuration(Number(e.target.value))}
+                    className="flex-1 accent-indigo-500"
+                  />
+                  <span className="text-sm font-bold text-indigo-500 min-w-[4rem] text-center">
+                    {videoDuration} min
+                  </span>
+                </div>
               </div>
 
               <button

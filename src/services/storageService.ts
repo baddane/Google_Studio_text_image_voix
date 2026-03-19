@@ -2,6 +2,7 @@ import type { VideoScript, CapCutTutorial } from './geminiService';
 
 export interface ProjectData {
   blogContent: string;
+  videoDuration: number;
   selectedVoice: string;
   videoScript: VideoScript | null;
   capCutTutorial: CapCutTutorial | null;
