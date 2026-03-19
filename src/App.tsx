@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { generateYouTubeScript, generateImage, generateSpeech, generateCapCutTutorial, VideoScript, CapCutTutorial } from './services/geminiService';
 import { 
   FileText, 
@@ -276,80 +278,57 @@ export default function App() {
     }
   };
 
-  const handleDownloadAll = () => {
+  const handleDownloadAll = async () => {
     if (!videoScript) return;
     const slug = videoScript.title.replace(/\s+/g, '-').toLowerCase();
-    let delay = 0;
+    const zip = new JSZip();
 
-    // 1. Download script as .txt
+    // 1. Script as .txt
     const scriptContent = `${videoScript.title}\nDurée estimée : ${videoScript.totalEstimatedDuration}\n\n` +
       videoScript.scenes.map((s, i) =>
         `=== SCÈNE ${i + 1} : ${s.title} ===\n\n${s.script}\n\nPrompts illustrations :\n${s.illustrationPrompts.map((p, j) => `  ${j + 1}. ${p}`).join('\n')}`
       ).join('\n\n---\n\n');
-    const scriptBlob = new Blob([scriptContent], { type: 'text/plain;charset=utf-8' });
-    const scriptUrl = URL.createObjectURL(scriptBlob);
-    setTimeout(() => {
-      const a = document.createElement('a');
-      a.href = scriptUrl;
-      a.download = `${slug}-script.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(scriptUrl);
-    }, delay);
-    delay += 300;
+    zip.file(`${slug}-script.txt`, scriptContent);
 
-    // 2. Download audio if available
+    // 2. Audio if available
     if (audioUrl) {
-      setTimeout(() => {
-        const a = document.createElement('a');
-        a.href = audioUrl;
-        a.download = `${slug}-voix.wav`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }, delay);
-      delay += 300;
+      const audioResponse = await fetch(audioUrl);
+      const audioBlob = await audioResponse.blob();
+      zip.file(`${slug}-voix.wav`, audioBlob);
     }
 
-    // 3. Download all generated images
-    (Object.entries(generatedImages) as [string, string[]][]).forEach(([sceneIdx, images]) => {
+    // 3. All generated images
+    for (const [sceneIdx, images] of Object.entries(generatedImages) as [string, string[]][]) {
       const scene = videoScript.scenes[Number(sceneIdx)];
-      if (!scene) return;
-      images.forEach((img: string, imgIdx: number) => {
-        if (img) {
-          setTimeout(() => {
-            const a = document.createElement('a');
-            a.href = img;
-            a.download = `${slug}-scene${Number(sceneIdx) + 1}-img${imgIdx + 1}.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          }, delay);
-          delay += 200;
+      if (!scene) continue;
+      for (let imgIdx = 0; imgIdx < images.length; imgIdx++) {
+        const img = images[imgIdx];
+        if (!img) continue;
+        // Handle both base64 data URLs and blob URLs
+        if (img.startsWith('data:')) {
+          const base64Data = img.split(',')[1];
+          zip.file(`images/${slug}-scene${Number(sceneIdx) + 1}-img${imgIdx + 1}.png`, base64Data, { base64: true });
+        } else {
+          const imgResponse = await fetch(img);
+          const imgBlob = await imgResponse.blob();
+          zip.file(`images/${slug}-scene${Number(sceneIdx) + 1}-img${imgIdx + 1}.png`, imgBlob);
         }
-      });
-    });
+      }
+    }
 
-    // 4. Download CapCut tutorial if available
+    // 4. CapCut tutorial if available
     if (capCutTutorial) {
       const tutoContent = `TUTO CAPCUT — ${videoScript.title}\n\n${capCutTutorial.intro}\n\n` +
         capCutTutorial.steps.map((step, i) =>
           `--- ÉTAPE ${i + 1} : ${step.title} ---\n${step.instructions.join('\n')}\n💡 Astuce : ${step.tip}`
         ).join('\n\n') +
         `\n\n=== RÉCAP TIMELINE ===\n${capCutTutorial.timelineRecap.join('\n')}`;
-      const tutoBlob = new Blob([tutoContent], { type: 'text/plain;charset=utf-8' });
-      const tutoUrl = URL.createObjectURL(tutoBlob);
-      setTimeout(() => {
-        const a = document.createElement('a');
-        a.href = tutoUrl;
-        a.download = `${slug}-tuto-capcut.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(tutoUrl);
-      }, delay);
+      zip.file(`${slug}-tuto-capcut.txt`, tutoContent);
     }
+
+    // Generate and download ZIP
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    saveAs(zipBlob, `${slug}-studio.zip`);
   };
 
   const handleGenerateCapCutTuto = async () => {
