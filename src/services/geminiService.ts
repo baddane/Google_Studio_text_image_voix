@@ -12,6 +12,18 @@ export interface VideoScript {
   scenes: Scene[];
 }
 
+export interface CapCutTutorialStep {
+  title: string;
+  instructions: string[];
+  tip: string;
+}
+
+export interface CapCutTutorial {
+  intro: string;
+  steps: CapCutTutorialStep[];
+  timelineRecap: string[];
+}
+
 const getAI = () => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
   return new GoogleGenAI({ apiKey });
@@ -258,4 +270,98 @@ CRITICAL — TEXT IN IMAGE:
   }
 
   throw new Error("No image data found");
+}
+
+export async function generateCapCutTutorial(
+  videoScript: VideoScript,
+  audioDurationSeconds: number
+): Promise<CapCutTutorial> {
+  const ai = getAI();
+  const model = "gemini-3.1-flash-lite-preview";
+
+  const sceneSummary = videoScript.scenes.map((s, i) =>
+    `Scène ${i + 1} — "${s.title}" : ${s.illustrationPrompts.length} images. Script : "${s.script.substring(0, 100)}..."`
+  ).join('\n');
+
+  const totalImages = videoScript.scenes.reduce((sum, s) => sum + s.illustrationPrompts.length, 0);
+  const nbScenes = videoScript.scenes.length;
+  const avgSceneDuration = Math.round(audioDurationSeconds / nbScenes);
+  const avgImageDuration = Math.round(avgSceneDuration / 3);
+
+  const response = await ai.models.generateContent({
+    model,
+    contents: {
+      role: "user",
+      parts: [{
+        text: `Tu es un EXPERT en montage vidéo CapCut, spécialisé dans la création de vidéos YouTube à partir d'images doodle et de voix-off IA.
+
+Génère un tutoriel CapCut PERSONNALISÉ et DÉTAILLÉ pour monter cette vidéo spécifique.
+
+📊 DONNÉES DE LA VIDÉO :
+- Titre : "${videoScript.title}"
+- Durée totale estimée : ${videoScript.totalEstimatedDuration}
+- Durée audio réelle : ${audioDurationSeconds} secondes
+- Nombre de scènes : ${nbScenes}
+- Nombre total d'images : ${totalImages}
+- Durée moyenne par scène : ~${avgSceneDuration}s
+- Durée moyenne par image : ~${avgImageDuration}s
+
+📋 DÉTAIL DES SCÈNES :
+${sceneSummary}
+
+🎯 INSTRUCTIONS :
+- Le tuto doit être SPÉCIFIQUE à cette vidéo (mentionne les noms des scènes, les durées calculées, le nombre d'images exact).
+- Donne des timecodes précis pour le placement des images sur la timeline (ex: "Scène 1 : Image 1 de 0:00 à 0:${avgImageDuration}").
+- Recommande des transitions ADAPTÉES au ton de chaque scène (dynamique → Glitch, émotion → Fade, révélation → Flash, etc.).
+- Suggère des animations Ken Burns adaptées au contenu de chaque image.
+- Recommande un style de musique de fond en rapport avec le sujet "${videoScript.title}".
+- Donne des astuces de sous-titrage spécifiques au rythme du script.
+- Tout en FRANÇAIS.
+
+Réponds en JSON structuré.`
+      }]
+    },
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          intro: {
+            type: Type.STRING,
+            description: "Introduction personnalisée du tuto (2-3 phrases contextuelles)"
+          },
+          steps: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING, description: "Titre de l'étape" },
+                instructions: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                  description: "Liste d'instructions détaillées et spécifiques"
+                },
+                tip: { type: Type.STRING, description: "Astuce pro contextuelle" }
+              },
+              required: ["title", "instructions", "tip"]
+            }
+          },
+          timelineRecap: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "Lignes du récap timeline avec timecodes réels"
+          }
+        },
+        required: ["intro", "steps", "timelineRecap"]
+      }
+    }
+  });
+
+  let text = response.text;
+  if (!text) throw new Error("Pas de tutoriel généré.");
+
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) text = jsonMatch[0];
+
+  return JSON.parse(text);
 }

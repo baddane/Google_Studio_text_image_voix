@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { generateYouTubeScript, generateImage, generateSpeech, VideoScript } from './services/geminiService';
+import { generateYouTubeScript, generateImage, generateSpeech, generateCapCutTutorial, VideoScript, CapCutTutorial } from './services/geminiService';
 import { 
   FileText, 
   Youtube, 
@@ -41,6 +41,9 @@ export default function App() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioLoading, setAudioLoading] = useState(false);
   const [showCapCutTuto, setShowCapCutTuto] = useState(false);
+  const [capCutTutorial, setCapCutTutorial] = useState<CapCutTutorial | null>(null);
+  const [capCutLoading, setCapCutLoading] = useState(false);
+  const [audioDuration, setAudioDuration] = useState<number>(0);
 
   const voices = [
     { name: 'Puck', desc: 'Énergique & Dynamique — Idéal YouTube', tag: '🔥' },
@@ -84,6 +87,8 @@ export default function App() {
     setGeneratedImages({});
     setImageLoading({});
     setImageError({});
+    setCapCutTutorial(null);
+    setAudioDuration(0);
     try {
       const result = await generateYouTubeScript(blogContent);
       setVideoScript(result);
@@ -167,6 +172,23 @@ export default function App() {
       setError("Erreur lors de la génération de l'audio.");
     } finally {
       setAudioLoading(false);
+    }
+  };
+
+  const handleGenerateCapCutTuto = async () => {
+    if (!videoScript) return;
+    setCapCutLoading(true);
+    setShowCapCutTuto(true);
+    try {
+      // Use actual audio duration if available, otherwise estimate from script length
+      const duration = audioDuration > 0 ? audioDuration : Math.round(videoScript.scenes.map(s => s.script).join(' ').split(/\s+/).length / 2.5);
+      const tutorial = await generateCapCutTutorial(videoScript, duration);
+      setCapCutTutorial(tutorial);
+    } catch (err) {
+      console.error("CapCut tutorial generation error:", err);
+      setError("Erreur lors de la génération du tutoriel CapCut.");
+    } finally {
+      setCapCutLoading(false);
     }
   };
 
@@ -432,7 +454,11 @@ export default function App() {
                                 Réinitialiser
                               </button>
                             </div>
-                            <audio controls className="w-full h-10 custom-audio">
+                            <audio
+                              controls
+                              className="w-full h-10 custom-audio"
+                              onLoadedMetadata={(e) => setAudioDuration(Math.round((e.target as HTMLAudioElement).duration))}
+                            >
                               <source src={audioUrl} type="audio/wav" />
                               Votre navigateur ne supporte pas l'élément audio.
                             </audio>
@@ -572,171 +598,144 @@ export default function App() {
                     ))}
                   </div>
 
-                  {/* CapCut Tutorial Section */}
+                  {/* CapCut Tutorial Section — AI Generated */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                     className="glass rounded-3xl overflow-hidden"
                   >
-                    <button
-                      onClick={() => setShowCapCutTuto(!showCapCutTuto)}
-                      className="w-full flex items-center justify-between p-8 hover:bg-white/5 transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                          <Scissors className="w-6 h-6 text-white" />
+                    {!capCutTutorial && !capCutLoading ? (
+                      <div className="p-8 flex flex-col items-center gap-6 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          <Scissors className="w-8 h-8 text-white" />
                         </div>
-                        <div className="text-left">
-                          <h3 className="text-lg font-bold tracking-tight">Tuto CapCut : Montage Complet</h3>
-                          <p className="text-sm text-slate-500 dark:text-white/40">Comment assembler tes images, voix et transitions pour une vidéo YouTube pro</p>
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-bold tracking-tight">Tuto CapCut Personnalisé</h3>
+                          <p className="text-sm text-slate-500 dark:text-white/40 max-w-md">
+                            Gemini va analyser tes scènes, images et audio pour générer un guide de montage CapCut adapté à ta vidéo.
+                          </p>
+                          {audioDuration > 0 && (
+                            <p className="text-xs text-indigo-500 font-mono">
+                              Audio détecté : {Math.floor(audioDuration / 60)}:{String(audioDuration % 60).padStart(2, '0')}
+                            </p>
+                          )}
                         </div>
-                      </div>
-                      {showCapCutTuto ? (
-                        <ChevronUp className="w-5 h-5 text-slate-400" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-slate-400" />
-                      )}
-                    </button>
-
-                    <AnimatePresence>
-                      {showCapCutTuto && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
+                        <button
+                          onClick={handleGenerateCapCutTuto}
+                          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all active:scale-[0.98]"
                         >
-                          <div className="px-8 pb-8 space-y-8">
-
-                            {/* Étape 1 */}
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <span className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold">1</span>
-                                <h4 className="font-bold text-base">Créer le projet</h4>
-                              </div>
-                              <div className="ml-11 space-y-2 text-sm text-slate-600 dark:text-white/60 leading-relaxed">
-                                <p>Ouvre <strong>CapCut</strong> &rarr; <strong>Nouveau Projet</strong> &rarr; Format <strong>16:9</strong> (YouTube).</p>
-                                <p>Résolution : <strong>1080p</strong> ou <strong>4K</strong> si disponible.</p>
-                              </div>
+                          <Wand2 className="w-4 h-4" />
+                          Générer le Tuto CapCut
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => setShowCapCutTuto(!showCapCutTuto)}
+                          className="w-full flex items-center justify-between p-8 hover:bg-white/5 transition-colors"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                              <Scissors className="w-6 h-6 text-white" />
                             </div>
-
-                            {/* Étape 2 */}
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <span className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold">2</span>
-                                <h4 className="font-bold text-base">Importer l'audio (voix-off)</h4>
-                              </div>
-                              <div className="ml-11 space-y-2 text-sm text-slate-600 dark:text-white/60 leading-relaxed">
-                                <p>Télécharge le fichier audio généré ci-dessus et importe-le dans CapCut.</p>
-                                <p>Place l'audio sur la <strong>piste audio principale</strong>. C'est lui qui dicte le rythme de toute la vidéo.</p>
-                              </div>
+                            <div className="text-left">
+                              <h3 className="text-lg font-bold tracking-tight">Tuto CapCut : Montage Personnalisé</h3>
+                              <p className="text-sm text-slate-500 dark:text-white/40">
+                                {capCutLoading ? 'Génération en cours...' : 'Guide adapté à ta vidéo — clic pour déplier'}
+                              </p>
                             </div>
-
-                            {/* Étape 3 */}
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <span className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold">3</span>
-                                <h4 className="font-bold text-base">Adapter les images à la durée de la voix</h4>
-                              </div>
-                              <div className="ml-11 space-y-2 text-sm text-slate-600 dark:text-white/60 leading-relaxed">
-                                <p><strong>C'est l'étape clé !</strong> Chaque scène a 3 images. Voici comment les synchroniser :</p>
-                                <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
-                                  <p>1. Écoute la voix-off et repère le <strong>début et la fin de chaque scène</strong>.</p>
-                                  <p>2. Divise la durée de chaque scène en <strong>3 parts égales</strong> (une par image).</p>
-                                  <p>3. Place les 3 images de la scène sur la timeline et <strong>étire chaque image</strong> pour qu'elle couvre son tiers.</p>
-                                  <p>4. <strong>Astuce</strong> : Active les sous-titres auto (<em>Texte &rarr; Sous-titres auto</em>) pour visualiser les mots et caler tes images au bon moment.</p>
-                                </div>
-                                <p><strong>Exemple</strong> : Si une scène dure 30s &rarr; Image 1 = 0-10s, Image 2 = 10-20s, Image 3 = 20-30s.</p>
-                              </div>
-                            </div>
-
-                            {/* Étape 4 */}
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <span className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold">4</span>
-                                <h4 className="font-bold text-base">Animer les images (Ken Burns Effect)</h4>
-                              </div>
-                              <div className="ml-11 space-y-2 text-sm text-slate-600 dark:text-white/60 leading-relaxed">
-                                <p>Des images fixes = vidéo ennuyeuse. Ajoute du <strong>mouvement</strong> :</p>
-                                <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
-                                  <p><Film className="w-4 h-4 inline mr-1 text-indigo-400" /><strong>Zoom lent</strong> : Sélectionne l'image &rarr; <em>Animation &rarr; Combo</em> &rarr; choisis un zoom lent entrant.</p>
-                                  <p><Film className="w-4 h-4 inline mr-1 text-indigo-400" /><strong>Pan (glissement)</strong> : Utilise les keyframes pour déplacer l'image de gauche à droite ou de haut en bas.</p>
-                                  <p><Film className="w-4 h-4 inline mr-1 text-indigo-400" /><strong>Alterne</strong> : Zoom-in sur Image 1, pan sur Image 2, zoom-out sur Image 3 — ça crée du dynamisme.</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Étape 5 */}
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <span className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold">5</span>
-                                <h4 className="font-bold text-base">Transitions entre les scènes</h4>
-                              </div>
-                              <div className="ml-11 space-y-2 text-sm text-slate-600 dark:text-white/60 leading-relaxed">
-                                <p>Entre chaque image, ajoute une <strong>transition</strong> :</p>
-                                <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
-                                  <p><strong>Entre images d'une même scène</strong> : transitions douces (<em>Dissolve, Fade, Slide</em>) — durée <strong>0.3-0.5s</strong>.</p>
-                                  <p><strong>Entre scènes différentes</strong> : transitions plus marquées (<em>Glitch, Zoom, Swipe</em>) — durée <strong>0.5-0.8s</strong>.</p>
-                                  <p><strong>Astuce pro</strong> : Utilise <em>Glitch</em> ou <em>Flash</em> aux moments de révélation pour un effet punch.</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Étape 6 */}
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <span className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold">6</span>
-                                <h4 className="font-bold text-base">Sous-titres & Textes animés</h4>
-                              </div>
-                              <div className="ml-11 space-y-2 text-sm text-slate-600 dark:text-white/60 leading-relaxed">
-                                <p><strong>Texte &rarr; Sous-titres auto &rarr; Français</strong> : génère les sous-titres automatiquement.</p>
-                                <p>Choisis un style <strong>bold + ombre</strong> pour la lisibilité. Taille : assez grande pour mobile.</p>
-                                <p><strong>Astuce</strong> : Ajoute des mots-clés en grand format (<em>Texte &rarr; Modèles</em>) aux moments forts pour renforcer l'impact visuel.</p>
-                              </div>
-                            </div>
-
-                            {/* Étape 7 */}
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <span className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold">7</span>
-                                <h4 className="font-bold text-base">Musique de fond & Sound Design</h4>
-                              </div>
-                              <div className="ml-11 space-y-2 text-sm text-slate-600 dark:text-white/60 leading-relaxed">
-                                <p>Ajoute une musique de fond (<em>Audio &rarr; Musique</em>) en rapport avec le thème. Volume : <strong>10-15%</strong> pour ne pas couvrir la voix.</p>
-                                <p>Ajoute des <strong>effets sonores</strong> (<em>whoosh, pop, ding</em>) aux transitions et moments clés.</p>
-                              </div>
-                            </div>
-
-                            {/* Étape 8 */}
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <span className="w-8 h-8 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm font-bold">8</span>
-                                <h4 className="font-bold text-base">Export Final</h4>
-                              </div>
-                              <div className="ml-11 space-y-2 text-sm text-slate-600 dark:text-white/60 leading-relaxed">
-                                <p>Résolution : <strong>1080p 60fps</strong> (ou 4K). Codec : <strong>H.264</strong>. Qualité : <strong>Haute</strong>.</p>
-                                <p>Vérifie le rendu final en entier avant d'uploader sur YouTube.</p>
-                              </div>
-                            </div>
-
-                            {/* Récap visuel */}
-                            <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl p-6 space-y-3">
-                              <h4 className="font-bold text-sm uppercase tracking-wider text-indigo-400">Récap Timeline CapCut</h4>
-                              <div className="text-sm text-slate-600 dark:text-white/60 font-mono space-y-1">
-                                <p>🎵 Piste Audio &nbsp;&nbsp;&nbsp;: [========= Voix-off générée =========]</p>
-                                <p>🖼️ Piste Vidéo &nbsp;&nbsp;: [Img1][Img2][Img3] | [Img1][Img2][Img3] | ...</p>
-                                <p>✨ Transitions &nbsp;&nbsp;: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↕&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↕&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↕↕&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↕&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↕</p>
-                                <p>📝 Sous-titres &nbsp;&nbsp;: [====== Sous-titres auto français ======]</p>
-                                <p>🎶 Musique fond &nbsp;: [========= Volume 10-15% ===========]</p>
-                              </div>
-                            </div>
-
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                          {capCutLoading ? (
+                            <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+                          ) : showCapCutTuto ? (
+                            <ChevronUp className="w-5 h-5 text-slate-400" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-slate-400" />
+                          )}
+                        </button>
+
+                        <AnimatePresence>
+                          {showCapCutTuto && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.3 }}
+                              className="overflow-hidden"
+                            >
+                              {capCutLoading ? (
+                                <div className="px-8 pb-8 space-y-4">
+                                  {[1, 2, 3, 4].map((i) => (
+                                    <div key={i} className="space-y-2 animate-pulse">
+                                      <div className="h-6 bg-slate-100 dark:bg-white/5 rounded w-1/3" />
+                                      <div className="h-16 bg-slate-100 dark:bg-white/5 rounded w-full" />
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : capCutTutorial && (
+                                <div className="px-8 pb-8 space-y-8">
+                                  {/* Intro personnalisée */}
+                                  <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl p-5">
+                                    <p className="text-sm text-slate-600 dark:text-white/70 leading-relaxed italic">
+                                      {capCutTutorial.intro}
+                                    </p>
+                                  </div>
+
+                                  {/* Étapes dynamiques */}
+                                  {capCutTutorial.steps.map((step, i) => (
+                                    <div key={i} className="space-y-3">
+                                      <div className="flex items-center gap-3">
+                                        <span className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold shrink-0">
+                                          {i + 1}
+                                        </span>
+                                        <h4 className="font-bold text-base">{step.title}</h4>
+                                      </div>
+                                      <div className="ml-11 space-y-2">
+                                        <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
+                                          {step.instructions.map((instruction, j) => (
+                                            <p key={j} className="text-sm text-slate-600 dark:text-white/60 leading-relaxed">
+                                              {instruction}
+                                            </p>
+                                          ))}
+                                        </div>
+                                        {step.tip && (
+                                          <div className="flex items-start gap-2 text-xs text-purple-500 dark:text-purple-400 bg-purple-500/5 border border-purple-500/10 rounded-lg p-3">
+                                            <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                                            <span>{step.tip}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+
+                                  {/* Timeline récap dynamique */}
+                                  <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl p-6 space-y-3">
+                                    <h4 className="font-bold text-sm uppercase tracking-wider text-indigo-400">Récap Timeline CapCut</h4>
+                                    <div className="text-sm text-slate-600 dark:text-white/60 font-mono space-y-1">
+                                      {capCutTutorial.timelineRecap.map((line, i) => (
+                                        <p key={i}>{line}</p>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Bouton régénérer */}
+                                  <div className="flex justify-center">
+                                    <button
+                                      onClick={handleGenerateCapCutTuto}
+                                      className="flex items-center gap-2 text-slate-400 hover:text-purple-500 transition-colors text-[10px] font-bold uppercase tracking-[0.3em]"
+                                    >
+                                      <RefreshCw className="w-3.5 h-3.5" />
+                                      Régénérer le tuto
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </>
+                    )}
                   </motion.div>
 
                   <div className="flex justify-center pt-12 pb-24">
