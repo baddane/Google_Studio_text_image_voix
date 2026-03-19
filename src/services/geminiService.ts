@@ -139,12 +139,12 @@ export async function generateYouTubeScript(blogContent: string): Promise<VideoS
             🎨 Pour chaque scène, fournis :
             1. Un titre de scène ACCROCHEUR (style titre YouTube).
             2. Le script parlé (voix-off) — dynamique et captivant.
-            3. TROIS (3) prompts d'illustration courts et visuels (max 2 phrases chacun) :
-               - Chaque prompt décrit UNE ACTION ou UNE SCÈNE précise du script, PAS de texte dans l'image.
-               - NE PAS inclure de description du personnage principal dans les prompts (il sera ajouté automatiquement).
-               - Décris uniquement : l'action, le décor, l'ambiance, les couleurs dominantes.
-               - Style : semi-réaliste, moderne, cinématique, vibrant.
-               - PAS de bulles de texte, PAS de panneaux avec du texte, PAS de mots dans l'image.
+            3. TROIS (3) prompts d'illustration en ANGLAIS (max 3 phrases chacun) :
+               - Chaque prompt décrit UNE ACTION ou UNE SCÈNE précise du script.
+               - NE PAS inclure de description du personnage principal (il sera ajouté automatiquement).
+               - Décris : l'action, le décor, l'ambiance, les éléments visuels autour du personnage.
+               - Inclure UN MOT-CLÉ ou UNE COURTE PHRASE en rapport avec la scène qui sera affiché comme texte doodle dans l'image (ex: "BOOM!", "Wait what?!", "Mind = Blown", "Le saviez-vous?").
+               - Style : doodle art, croquis dessiné à la main, traits noirs sur fond blanc/coloré.
 
             📝 Contenu du Blog à transformer :
             ${blogContent}`,
@@ -208,19 +208,22 @@ export async function generateImage(prompt: string, scriptContext?: string): Pro
     contents: {
       parts: [
         {
-          text: `Create a semi-realistic, vibrant, cinematic illustration in 16:9 format.
+          text: `Create a hand-drawn doodle-style illustration in 16:9 format.
 
-SCENE: ${prompt}
+SCENE TO ILLUSTRATE: ${prompt}
 
-MAIN CHARACTER (must appear in EVERY image, consistent appearance):
-Semi-realistic digital portrait of a confident female creator with long dark hair and black glasses. Modern youtube avatar style. She is expressive and dynamic.
+MAIN CHARACTER (MUST appear in every image with IDENTICAL appearance):
+A confident female content creator with long dark hair and black-framed glasses. Drawn in clean doodle/sketch style with bold black ink outlines. Expressive face, dynamic pose matching the scene. She has a warm, engaging personality visible through her expressions.
 
-STYLE: Semi-realistic digital art, cinematic lighting, glossy highlights, ultra detailed, sharp focus, vibrant colors, modern content creator branding, 4k quality.
-
-RULES:
-- NO text, NO speech bubbles, NO words, NO watermarks in the image.
-- The main character must be recognizable and consistent across all images.
-- Background should match the scene described above.`,
+DOODLE ART STYLE RULES:
+- Hand-drawn sketch aesthetic with bold black ink outlines on a clean white or lightly colored background.
+- Playful hand-drawn elements around the character: arrows, stars, exclamation marks, underlines, small icons, squiggles.
+- Whimsical, fun, energetic feel — like a YouTuber's whiteboard or notebook doodles.
+- Include small doodle text annotations related to the scene (keywords, reactions, fun labels) written in a handwritten font style.
+- Selective color pops: use vibrant accent colors (red, blue, yellow) sparingly to highlight key elements against the mostly black & white sketch.
+- The character must look CONSISTENT across all images: same hair, same glasses, same drawing style.
+- Clean composition, not cluttered. White space is important in doodle art.
+- 4K quality, sharp lines, professional doodle illustration.`,
         },
       ],
     },
