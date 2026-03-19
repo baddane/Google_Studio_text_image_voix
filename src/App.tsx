@@ -94,16 +94,17 @@ export default function App() {
 
   // Auto-restore current session on mount
   useEffect(() => {
-    const session = loadCurrentSession();
-    if (session?.videoScript) {
-      setVideoScript(session.videoScript);
-      setBlogContent(session.blogContent || '');
-      setSelectedVoice(session.selectedVoice || 'Puck');
-      setCapCutTutorial(session.capCutTutorial);
-      setAudioDuration(session.audioDuration || 0);
-      setGeneratedImages(session.generatedImages || {});
-      setAudioUrl(session.audioUrl);
-    }
+    loadCurrentSession().then(session => {
+      if (session?.videoScript) {
+        setVideoScript(session.videoScript);
+        setBlogContent(session.blogContent || '');
+        setSelectedVoice(session.selectedVoice || 'Puck');
+        setCapCutTutorial(session.capCutTutorial);
+        setAudioDuration(session.audioDuration || 0);
+        setGeneratedImages(session.generatedImages || {});
+        setAudioUrl(session.audioUrl);
+      }
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -121,9 +122,9 @@ export default function App() {
     });
   }, [videoScript, generatedImages, audioUrl, capCutTutorial, audioDuration, blogContent, selectedVoice]);
 
-  const handleSaveToHistory = () => {
+  const handleSaveToHistory = async () => {
     if (!videoScript) return;
-    const result = saveProjectToHistory({
+    const result = await saveProjectToHistory({
       blogContent,
       selectedVoice,
       videoScript,
@@ -134,15 +135,15 @@ export default function App() {
     });
     setHistoryEntries(getHistoryIndex());
     if (result.success) {
-      setSaveNotice(result.mediaStored ? 'Projet sauvegardé !' : 'Projet sauvegardé (media trop volumineux, script seul conservé)');
+      setSaveNotice('Projet sauvegardé !');
     } else {
-      setSaveNotice('Erreur : stockage plein. Supprimez des anciens projets.');
+      setSaveNotice('Erreur : impossible de sauvegarder.');
     }
     setTimeout(() => setSaveNotice(null), 4000);
   };
 
-  const handleLoadFromHistory = (id: string) => {
-    const data = loadProjectFromHistory(id);
+  const handleLoadFromHistory = async (id: string) => {
+    const data = await loadProjectFromHistory(id);
     if (!data) return;
     setVideoScript(data.videoScript);
     setBlogContent(data.blogContent || '');
@@ -155,8 +156,8 @@ export default function App() {
     setShowCapCutTuto(false);
   };
 
-  const handleDeleteFromHistory = (id: string) => {
-    deleteProjectFromHistory(id);
+  const handleDeleteFromHistory = async (id: string) => {
+    await deleteProjectFromHistory(id);
     setHistoryEntries(getHistoryIndex());
   };
 

@@ -24,12 +24,59 @@ export interface HistoryEntry {
   mediaStored: boolean;
 }
 
-const CURRENT_SESSION_META = 'nano_current_meta';
-const CURRENT_SESSION_MEDIA = 'nano_current_media';
-const HISTORY_INDEX = 'nano_history_index';
+// ── IndexedDB helpers (unlimited storage for media) ──
 
-function projectMetaKey(id: string) { return `nano_proj_${id}`; }
-function projectMediaKey(id: string) { return `nano_media_${id}`; }
+const DB_NAME = 'nano_studio';
+const DB_VERSION = 1;
+const STORE_NAME = 'projects';
+
+function openDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbPut(key: string, value: unknown): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbGet<T>(key: string): Promise<T | undefined> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).get(key);
+    req.onsuccess = () => resolve(req.result as T | undefined);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbDelete(key: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ── localStorage helpers (lightweight index & meta only) ──
+
+const HISTORY_INDEX = 'nano_history_index';
 
 function trySafeSet(key: string, value: string): boolean {
   try {
@@ -40,53 +87,37 @@ function trySafeSet(key: string, value: string): boolean {
   }
 }
 
-// ── Current Session (auto-save / auto-restore) ──
+// ── Current Session (auto-save / auto-restore via IndexedDB) ──
 
-export function saveCurrentSession(data: ProjectData): void {
+const CURRENT_SESSION_KEY = 'current_session';
+
+export async function saveCurrentSession(data: ProjectData): Promise<void> {
   if (!data.videoScript) return;
-
-  const meta = {
-    blogContent: data.blogContent,
-    selectedVoice: data.selectedVoice,
-    videoScript: data.videoScript,
-    capCutTutorial: data.capCutTutorial,
-    audioDuration: data.audioDuration,
-  };
-  trySafeSet(CURRENT_SESSION_META, JSON.stringify(meta));
-
-  const media = {
-    generatedImages: data.generatedImages,
-    audioUrl: data.audioUrl,
-  };
-  // Try full media, then images only, then nothing
-  const mediaJson = JSON.stringify(media);
-  if (!trySafeSet(CURRENT_SESSION_MEDIA, mediaJson)) {
-    const imagesOnly = JSON.stringify({ generatedImages: data.generatedImages, audioUrl: null });
-    if (!trySafeSet(CURRENT_SESSION_MEDIA, imagesOnly)) {
-      trySafeSet(CURRENT_SESSION_MEDIA, JSON.stringify({ generatedImages: {}, audioUrl: null }));
-    }
+  try {
+    await idbPut(CURRENT_SESSION_KEY, data);
+  } catch {
+    // Silently fail — session restore is best-effort
   }
 }
 
-export function loadCurrentSession(): ProjectData | null {
+export async function loadCurrentSession(): Promise<ProjectData | null> {
   try {
-    const metaStr = localStorage.getItem(CURRENT_SESSION_META);
-    if (!metaStr) return null;
-    const meta = JSON.parse(metaStr);
-    const mediaStr = localStorage.getItem(CURRENT_SESSION_MEDIA);
-    const media = mediaStr ? JSON.parse(mediaStr) : { generatedImages: {}, audioUrl: null };
-    return { ...meta, ...media };
+    const data = await idbGet<ProjectData>(CURRENT_SESSION_KEY);
+    return data && data.videoScript ? data : null;
   } catch {
     return null;
   }
 }
 
-export function clearCurrentSession(): void {
-  localStorage.removeItem(CURRENT_SESSION_META);
-  localStorage.removeItem(CURRENT_SESSION_MEDIA);
+export async function clearCurrentSession(): Promise<void> {
+  try {
+    await idbDelete(CURRENT_SESSION_KEY);
+  } catch {
+    // ignore
+  }
 }
 
-// ── History Index ──
+// ── History Index (lightweight, stays in localStorage) ──
 
 function loadIndex(): HistoryEntry[] {
   try {
@@ -105,38 +136,19 @@ export function getHistoryIndex(): HistoryEntry[] {
   return loadIndex();
 }
 
-// ── Save / Load / Delete Projects ──
+// ── Save / Load / Delete Projects (IndexedDB for full data) ──
 
-export function saveProjectToHistory(data: ProjectData): { success: boolean; mediaStored: boolean } {
+export async function saveProjectToHistory(data: ProjectData): Promise<{ success: boolean; mediaStored: boolean }> {
   if (!data.videoScript) return { success: false, mediaStored: false };
 
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
 
-  const meta = {
-    blogContent: data.blogContent,
-    selectedVoice: data.selectedVoice,
-    videoScript: data.videoScript,
-    capCutTutorial: data.capCutTutorial,
-    audioDuration: data.audioDuration,
-  };
-
-  if (!trySafeSet(projectMetaKey(id), JSON.stringify(meta))) {
+  try {
+    // Store full project data (meta + media) in IndexedDB — no size limit
+    await idbPut(`project_${id}`, data);
+  } catch {
     return { success: false, mediaStored: false };
-  }
-
-  // Try to store media with progressive degradation
-  let mediaStored = false;
-  const fullMedia = JSON.stringify({ generatedImages: data.generatedImages, audioUrl: data.audioUrl });
-  if (trySafeSet(projectMediaKey(id), fullMedia)) {
-    mediaStored = true;
-  } else {
-    const imagesOnly = JSON.stringify({ generatedImages: data.generatedImages, audioUrl: null });
-    if (trySafeSet(projectMediaKey(id), imagesOnly)) {
-      mediaStored = true;
-    } else {
-      trySafeSet(projectMediaKey(id), JSON.stringify({ generatedImages: {}, audioUrl: null }));
-    }
   }
 
   const imageCount = Object.values(data.generatedImages).reduce((sum, imgs) => sum + imgs.filter(Boolean).length, 0);
@@ -152,41 +164,49 @@ export function saveProjectToHistory(data: ProjectData): { success: boolean; med
     hasTuto: !!data.capCutTutorial,
     imageCount,
     scenesCount: data.videoScript.scenes.length,
-    mediaStored,
+    mediaStored: true,
   };
 
   const index = loadIndex();
   index.unshift(entry);
   saveIndex(index);
 
-  return { success: true, mediaStored };
+  return { success: true, mediaStored: true };
 }
 
-export function loadProjectFromHistory(id: string): ProjectData | null {
+export async function loadProjectFromHistory(id: string): Promise<ProjectData | null> {
   try {
-    const metaStr = localStorage.getItem(projectMetaKey(id));
-    if (!metaStr) return null;
-    const meta = JSON.parse(metaStr);
-    const mediaStr = localStorage.getItem(projectMediaKey(id));
-    const media = mediaStr ? JSON.parse(mediaStr) : { generatedImages: {}, audioUrl: null };
-    return { ...meta, ...media };
+    const data = await idbGet<ProjectData>(`project_${id}`);
+    return data || null;
   } catch {
     return null;
   }
 }
 
-export function deleteProjectFromHistory(id: string): void {
-  localStorage.removeItem(projectMetaKey(id));
-  localStorage.removeItem(projectMediaKey(id));
+export async function deleteProjectFromHistory(id: string): Promise<void> {
+  try {
+    await idbDelete(`project_${id}`);
+  } catch {
+    // ignore
+  }
   const index = loadIndex().filter(e => e.id !== id);
   saveIndex(index);
 }
 
-export function getStorageUsageMB(): number {
-  let total = 0;
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)!;
-    total += key.length + (localStorage.getItem(key)?.length || 0);
+export async function getStorageUsageMB(): Promise<number> {
+  try {
+    const estimate = await navigator.storage.estimate();
+    return Math.round((estimate.usage || 0) / (1024 * 1024) * 10) / 10;
+  } catch {
+    return 0;
   }
-  return Math.round((total * 2) / (1024 * 1024) * 10) / 10; // UTF-16 = 2 bytes/char
+}
+
+export async function getStorageQuotaMB(): Promise<number> {
+  try {
+    const estimate = await navigator.storage.estimate();
+    return Math.round((estimate.quota || 0) / (1024 * 1024));
+  } catch {
+    return 0;
+  }
 }

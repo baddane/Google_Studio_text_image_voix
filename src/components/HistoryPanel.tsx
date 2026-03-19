@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
@@ -13,7 +13,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import type { HistoryEntry } from '../services/storageService';
-import { getStorageUsageMB } from '../services/storageService';
+import { getStorageUsageMB, getStorageQuotaMB } from '../services/storageService';
 
 interface HistoryPanelProps {
   isOpen: boolean;
@@ -25,12 +25,23 @@ interface HistoryPanelProps {
 
 export default function HistoryPanel({ isOpen, onClose, entries, onLoad, onDelete }: HistoryPanelProps) {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const storageMB = isOpen ? getStorageUsageMB() : 0;
+  const [storageMB, setStorageMB] = useState(0);
+  const [quotaMB, setQuotaMB] = useState(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      getStorageUsageMB().then(setStorageMB);
+      getStorageQuotaMB().then(setQuotaMB);
+    }
+  }, [isOpen, entries.length]);
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
+
+  const displayQuota = quotaMB > 0 ? `${Math.round(quotaMB)} MB` : '∞';
+  const pct = quotaMB > 0 ? Math.min(100, (storageMB / quotaMB) * 100) : 0;
 
   return (
     <AnimatePresence>
@@ -77,11 +88,11 @@ export default function HistoryPanel({ isOpen, onClose, entries, onLoad, onDelet
             {/* Storage indicator */}
             <div className="px-6 py-3 border-b border-slate-100 dark:border-white/5 flex items-center gap-2 text-xs text-slate-400 dark:text-white/30">
               <HardDrive className="w-3.5 h-3.5" />
-              <span>Stockage : {storageMB} MB / ~5 MB</span>
+              <span>Stockage : {storageMB} MB / {displayQuota}</span>
               <div className="flex-1 h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden ml-2">
                 <div
-                  className={`h-full rounded-full transition-all ${storageMB > 4 ? 'bg-red-500' : storageMB > 3 ? 'bg-amber-500' : 'bg-indigo-500'}`}
-                  style={{ width: `${Math.min(100, (storageMB / 5) * 100)}%` }}
+                  className={`h-full rounded-full transition-all ${pct > 80 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-indigo-500'}`}
+                  style={{ width: `${pct}%` }}
                 />
               </div>
             </div>
