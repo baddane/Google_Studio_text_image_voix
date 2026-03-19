@@ -29,11 +29,11 @@ const getAI = () => {
   return new GoogleGenAI({ apiKey });
 };
 
-export async function generateSpeech(text: string, voiceName: string): Promise<string> {
+// Generate TTS for a single text chunk and return raw PCM bytes
+async function generateSpeechChunk(text: string, voiceName: string): Promise<Uint8Array> {
   const ai = getAI();
   const model = "gemini-2.5-flash-preview-tts";
 
-  // Add expressive speech directives for a more natural, captivating delivery
   const expressiveText = `Say the following script in a very natural, captivating and dynamic way.
 Speak like a passionate YouTuber who loves their topic.
 Use varied intonation: excited for key points, slightly slower for important revelations, and conversational pauses between ideas.
@@ -62,51 +62,74 @@ ${text}`;
     throw new Error("Échec de la génération de l'audio.");
   }
 
-  // Gemini TTS returns raw PCM 16-bit 24kHz. We need to add a WAV header for browser playback.
   const binaryString = atob(base64Audio);
-  const len = binaryString.length;
+  const pcm = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    pcm[i] = binaryString.charCodeAt(i);
+  }
+  return pcm;
+}
+
+// Wrap raw PCM data in a WAV header (16-bit, 24kHz, mono)
+function pcmToWavDataUrl(pcmData: Uint8Array): string {
+  const len = pcmData.length;
   const buffer = new ArrayBuffer(44 + len);
   const view = new DataView(buffer);
 
-  // RIFF identifier
-  view.setUint32(0, 0x52494646, false);
-  // file length
-  view.setUint32(4, 36 + len, true);
-  // RIFF type
-  view.setUint32(8, 0x57415645, false);
-  // format chunk identifier
-  view.setUint32(12, 0x666d7420, false);
-  // format chunk length
-  view.setUint32(16, 16, true);
-  // sample format (1 = PCM)
-  view.setUint16(20, 1, true);
-  // channel count (1 = Mono)
-  view.setUint16(22, 1, true);
-  // sample rate (24000 for gemini-2.5-flash-preview-tts)
-  view.setUint32(24, 24000, true);
-  // byte rate (sample rate * block align)
-  view.setUint32(28, 24000 * 2, true);
-  // block align (channel count * bytes per sample)
-  view.setUint16(32, 2, true);
-  // bits per sample
-  view.setUint16(34, 16, true);
-  // data chunk identifier
-  view.setUint32(36, 0x64617461, false);
-  // data chunk length
-  view.setUint32(40, len, true);
+  view.setUint32(0, 0x52494646, false);   // RIFF
+  view.setUint32(4, 36 + len, true);       // file length
+  view.setUint32(8, 0x57415645, false);    // WAVE
+  view.setUint32(12, 0x666d7420, false);   // fmt
+  view.setUint32(16, 16, true);            // format chunk length
+  view.setUint16(20, 1, true);             // PCM
+  view.setUint16(22, 1, true);             // mono
+  view.setUint32(24, 24000, true);         // sample rate
+  view.setUint32(28, 24000 * 2, true);     // byte rate
+  view.setUint16(32, 2, true);             // block align
+  view.setUint16(34, 16, true);            // bits per sample
+  view.setUint32(36, 0x64617461, false);   // data
+  view.setUint32(40, len, true);           // data length
 
-  for (let i = 0; i < len; i++) {
-    view.setUint8(44 + i, binaryString.charCodeAt(i));
-  }
+  const wavBytes = new Uint8Array(buffer);
+  wavBytes.set(pcmData, 44);
 
-  const bytes = new Uint8Array(buffer);
   let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < wavBytes.length; i++) {
+    binary += String.fromCharCode(wavBytes[i]);
   }
-  const base64Wav = btoa(binary);
+  return `data:audio/wav;base64,${btoa(binary)}`;
+}
 
-  return `data:audio/wav;base64,${base64Wav}`;
+/**
+ * Generate speech for multiple text chunks (one per scene), then concatenate
+ * into a single WAV. This avoids the Gemini TTS per-request output limit
+ * (~2 min) by generating each scene separately and merging the raw PCM.
+ */
+export async function generateSpeech(
+  sceneTexts: string[],
+  voiceName: string,
+  onProgress?: (done: number, total: number) => void,
+): Promise<string> {
+  const pcmChunks: Uint8Array[] = [];
+  const total = sceneTexts.length;
+
+  for (let i = 0; i < total; i++) {
+    onProgress?.(i, total);
+    const pcm = await generateSpeechChunk(sceneTexts[i], voiceName);
+    pcmChunks.push(pcm);
+  }
+  onProgress?.(total, total);
+
+  // Concatenate all PCM chunks
+  const totalLen = pcmChunks.reduce((sum, c) => sum + c.length, 0);
+  const merged = new Uint8Array(totalLen);
+  let offset = 0;
+  for (const chunk of pcmChunks) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return pcmToWavDataUrl(merged);
 }
 
 export async function generateYouTubeScript(blogContent: string): Promise<VideoScript> {

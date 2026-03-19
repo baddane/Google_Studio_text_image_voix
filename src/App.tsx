@@ -59,6 +59,7 @@ export default function App() {
   const [capCutTutorial, setCapCutTutorial] = useState<CapCutTutorial | null>(null);
   const [capCutLoading, setCapCutLoading] = useState(false);
   const [audioDuration, setAudioDuration] = useState<number>(0);
+  const [audioProgress, setAudioProgress] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>(() => getHistoryIndex());
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
@@ -249,14 +250,22 @@ export default function App() {
   const handleGenerateAudio = async () => {
     if (!videoScript) return;
     setAudioLoading(true);
+    setAudioProgress('');
     try {
-      const fullText = videoScript.scenes.map(s => s.script).join('\n\n');
-      const url = await generateSpeech(fullText, selectedVoice);
+      const sceneTexts = videoScript.scenes.map(s => s.script);
+      const url = await generateSpeech(sceneTexts, selectedVoice, (done, total) => {
+        if (done < total) {
+          setAudioProgress(`Scène ${done + 1}/${total}...`);
+        } else {
+          setAudioProgress('Fusion audio...');
+        }
+      });
       setAudioUrl(url);
     } catch (err) {
       console.error("Audio generation error:", err);
       setError("Erreur lors de la génération de l'audio.");
     } finally {
+      setAudioProgress('');
       setAudioLoading(false);
     }
   };
@@ -641,7 +650,7 @@ export default function App() {
                               {audioLoading ? (
                                 <>
                                   <Loader2 className="w-4 h-4 animate-spin" />
-                                  Génération...
+                                  {audioProgress || 'Génération...'}
                                 </>
                               ) : (
                                 <>
