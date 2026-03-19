@@ -25,9 +25,23 @@ import {
   ChevronDown,
   ChevronUp,
   Scissors,
-  Package
+  Package,
+  Save,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import HistoryPanel from './components/HistoryPanel';
+import {
+  saveCurrentSession,
+  loadCurrentSession,
+  clearCurrentSession,
+  saveProjectToHistory,
+  loadProjectFromHistory,
+  deleteProjectFromHistory,
+  getHistoryIndex,
+  type HistoryEntry,
+  type ProjectData,
+} from './services/storageService';
 
 export default function App() {
   const [blogContent, setBlogContent] = useState('');
@@ -45,6 +59,9 @@ export default function App() {
   const [capCutTutorial, setCapCutTutorial] = useState<CapCutTutorial | null>(null);
   const [capCutLoading, setCapCutLoading] = useState(false);
   const [audioDuration, setAudioDuration] = useState<number>(0);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>(() => getHistoryIndex());
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
 
   const voices = [
     { name: 'Puck', desc: 'Énergique & Dynamique — Idéal YouTube', tag: '🔥' },
@@ -73,6 +90,74 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDark]);
+
+  // Auto-restore current session on mount
+  useEffect(() => {
+    const session = loadCurrentSession();
+    if (session?.videoScript) {
+      setVideoScript(session.videoScript);
+      setBlogContent(session.blogContent || '');
+      setSelectedVoice(session.selectedVoice || 'Puck');
+      setCapCutTutorial(session.capCutTutorial);
+      setAudioDuration(session.audioDuration || 0);
+      setGeneratedImages(session.generatedImages || {});
+      setAudioUrl(session.audioUrl);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-save current session when state changes
+  useEffect(() => {
+    if (!videoScript) return;
+    saveCurrentSession({
+      blogContent,
+      selectedVoice,
+      videoScript,
+      capCutTutorial,
+      audioDuration,
+      generatedImages,
+      audioUrl,
+    });
+  }, [videoScript, generatedImages, audioUrl, capCutTutorial, audioDuration, blogContent, selectedVoice]);
+
+  const handleSaveToHistory = () => {
+    if (!videoScript) return;
+    const result = saveProjectToHistory({
+      blogContent,
+      selectedVoice,
+      videoScript,
+      capCutTutorial,
+      audioDuration,
+      generatedImages,
+      audioUrl,
+    });
+    setHistoryEntries(getHistoryIndex());
+    if (result.success) {
+      setSaveNotice(result.mediaStored ? 'Projet sauvegardé !' : 'Projet sauvegardé (media trop volumineux, script seul conservé)');
+    } else {
+      setSaveNotice('Erreur : stockage plein. Supprimez des anciens projets.');
+    }
+    setTimeout(() => setSaveNotice(null), 4000);
+  };
+
+  const handleLoadFromHistory = (id: string) => {
+    const data = loadProjectFromHistory(id);
+    if (!data) return;
+    setVideoScript(data.videoScript);
+    setBlogContent(data.blogContent || '');
+    setSelectedVoice(data.selectedVoice || 'Puck');
+    setCapCutTutorial(data.capCutTutorial);
+    setAudioDuration(data.audioDuration || 0);
+    setGeneratedImages(data.generatedImages || {});
+    setAudioUrl(data.audioUrl);
+    setError(null);
+    setShowCapCutTuto(false);
+  };
+
+  const handleDeleteFromHistory = (id: string) => {
+    deleteProjectFromHistory(id);
+    setHistoryEntries(getHistoryIndex());
+  };
 
   const handleGenerate = async () => {
     if (!blogContent.trim()) return;
@@ -282,6 +367,18 @@ export default function App() {
           </div>
           <div className="flex items-center gap-4">
             <button
+              onClick={() => { setHistoryOpen(true); setHistoryEntries(getHistoryIndex()); }}
+              className="p-2 rounded-xl glass glass-hover text-slate-500 dark:text-white/60 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all relative"
+              title="Historique des projets"
+            >
+              <Clock className="w-5 h-5" />
+              {historyEntries.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {historyEntries.length}
+                </span>
+              )}
+            </button>
+            <button
               onClick={() => setIsDark(!isDark)}
               className="p-2 rounded-xl glass glass-hover text-slate-500 dark:text-white/60 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all"
               title={isDark ? "Passer en mode jour" : "Passer en mode nuit"}
@@ -402,16 +499,40 @@ export default function App() {
                       </span>
                     </div>
                     <h2 className="text-4xl font-display font-bold tracking-tight text-slate-900 dark:text-white">{videoScript?.title}</h2>
-                    <button
-                      onClick={handleDownloadAll}
-                      className="w-full mt-4 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 text-sm uppercase tracking-widest"
-                    >
-                      <Package className="w-5 h-5" />
-                      Tout Télécharger
-                      <span className="text-[10px] font-normal opacity-70 lowercase tracking-normal">
-                        (script{audioUrl ? ' + audio' : ''}{Object.keys(generatedImages).length > 0 ? ' + images' : ''}{capCutTutorial ? ' + tuto' : ''})
-                      </span>
-                    </button>
+                    <div className="flex gap-3 mt-4">
+                      <button
+                        onClick={handleDownloadAll}
+                        className="flex-1 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 text-sm uppercase tracking-widest"
+                      >
+                        <Package className="w-5 h-5" />
+                        Télécharger
+                        <span className="text-[10px] font-normal opacity-70 lowercase tracking-normal hidden sm:inline">
+                          (script{audioUrl ? ' + audio' : ''}{Object.keys(generatedImages).length > 0 ? ' + images' : ''}{capCutTutorial ? ' + tuto' : ''})
+                        </span>
+                      </button>
+                      <button
+                        onClick={handleSaveToHistory}
+                        className="py-4 px-6 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-indigo-500/20 text-sm uppercase tracking-widest"
+                        title="Sauvegarder dans l'historique"
+                      >
+                        <Save className="w-5 h-5" />
+                        <span className="hidden sm:inline">Sauvegarder</span>
+                      </button>
+                    </div>
+                    <AnimatePresence>
+                      {saveNotice && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className={`mt-2 p-3 rounded-xl text-xs font-bold text-center ${
+                            saveNotice.includes('Erreur') ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          }`}
+                        >
+                          {saveNotice}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Script Complet */}
@@ -830,6 +951,11 @@ export default function App() {
                       onClick={() => {
                         setVideoScript(null);
                         setBlogContent('');
+                        setAudioUrl(null);
+                        setGeneratedImages({});
+                        setCapCutTutorial(null);
+                        setAudioDuration(0);
+                        clearCurrentSession();
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       className="flex items-center gap-2 text-slate-300 dark:text-white/20 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all text-[10px] font-bold uppercase tracking-[0.4em]"
@@ -844,6 +970,15 @@ export default function App() {
           </div>
         </div>
       </main>
+
+      {/* History Panel */}
+      <HistoryPanel
+        isOpen={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        entries={historyEntries}
+        onLoad={handleLoadFromHistory}
+        onDelete={handleDeleteFromHistory}
+      />
 
       {/* Background Decor */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
