@@ -139,12 +139,12 @@ export async function generateYouTubeScript(blogContent: string): Promise<VideoS
             🎨 Pour chaque scène, fournis :
             1. Un titre de scène ACCROCHEUR (style titre YouTube).
             2. Le script parlé (voix-off) — dynamique et captivant.
-            3. TROIS (3) prompts d'illustration ultra-détaillés :
-               - Chaque image illustre un moment CLÉ du script voix-off.
-               - Style : bande dessinée moderne, colorée, professionnelle.
-               - Personnage principal : TOUJOURS un "stickman" (bonhomme bâton) noir filiforme avec une tête blanche TRÈS expressive (émotions exagérées).
-               - Arrière-plans riches, détaillés, colorés et cinématiques.
-               - Si du texte apparaît (bulles, panneaux), orthographe PARFAITE.
+            3. TROIS (3) prompts d'illustration courts et visuels (max 2 phrases chacun) :
+               - Chaque prompt décrit UNE ACTION ou UNE SCÈNE précise du script, PAS de texte dans l'image.
+               - NE PAS inclure de description du personnage principal dans les prompts (il sera ajouté automatiquement).
+               - Décris uniquement : l'action, le décor, l'ambiance, les couleurs dominantes.
+               - Style : semi-réaliste, moderne, cinématique, vibrant.
+               - PAS de bulles de texte, PAS de panneaux avec du texte, PAS de mots dans l'image.
 
             📝 Contenu du Blog à transformer :
             ${blogContent}`,
@@ -208,16 +208,19 @@ export async function generateImage(prompt: string, scriptContext?: string): Pro
     contents: {
       parts: [
         {
-          text: `Create a high-quality, vibrant, and detailed comic book illustration.
-          CONTEXT (Voice-over script): "${scriptContext || ''}"
-          VISUAL DESCRIPTION TO ILLUSTRATE: ${prompt}
-          
-          REQUIREMENTS:
-          - TEXT ACCURACY: If any text is present in the image (speech bubbles, signs, screens), it must be spelled correctly without any typos or orthographic errors.
-          - The image MUST perfectly match the action described in the context and visual description.
-          - MAIN CHARACTER: A simple black stickman with a white, highly expressive head.
-          - STYLE: Modern digital comic illustration, clean lines, vibrant colors, detailed and professional backgrounds.
-          - ASPECT RATIO: 16:9 cinematic.`,
+          text: `Create a semi-realistic, vibrant, cinematic illustration in 16:9 format.
+
+SCENE: ${prompt}
+
+MAIN CHARACTER (must appear in EVERY image, consistent appearance):
+Semi-realistic digital portrait of a confident female creator with long dark hair and black glasses. Modern youtube avatar style. She is expressive and dynamic.
+
+STYLE: Semi-realistic digital art, cinematic lighting, glossy highlights, ultra detailed, sharp focus, vibrant colors, modern content creator branding, 4k quality.
+
+RULES:
+- NO text, NO speech bubbles, NO words, NO watermarks in the image.
+- The main character must be recognizable and consistent across all images.
+- Background should match the scene described above.`,
         },
       ],
     },
