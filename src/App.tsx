@@ -189,8 +189,8 @@ export default function App() {
   };
 
   const handleGenerateImages = async (prompts: string[], script: string, sceneIndex: number) => {
-    setImageLoading(prev => ({ ...prev, [sceneIndex]: [true, true, true] }));
-    setImageError(prev => ({ ...prev, [sceneIndex]: [null, null, null] }));
+    setImageLoading(prev => ({ ...prev, [sceneIndex]: prompts.map(() => true) }));
+    setImageError(prev => ({ ...prev, [sceneIndex]: prompts.map(() => null) }));
     
     const generationPromises = prompts.map(async (prompt, imgIndex) => {
       try {
@@ -204,14 +204,14 @@ export default function App() {
       } catch (err) {
         console.error(`Image ${imgIndex} generation error:`, err);
         setImageError(prev => {
-          const current = prev[sceneIndex] || [null, null, null];
+          const current = prev[sceneIndex] || prompts.map(() => null);
           const updated = [...current];
           updated[imgIndex] = err instanceof Error ? err.message : 'Erreur';
           return { ...prev, [sceneIndex]: updated };
         });
       } finally {
         setImageLoading(prev => {
-          const current = prev[sceneIndex] || [true, true, true];
+          const current = prev[sceneIndex] || prompts.map(() => true);
           const updated = [...current];
           updated[imgIndex] = false;
           return { ...prev, [sceneIndex]: updated };
@@ -725,7 +725,7 @@ export default function App() {
                                 <span className="text-[10px] font-bold uppercase tracking-widest">Nano Banana Assets</span>
                               </div>
                               <div className="flex items-center gap-3">
-                                {generatedImages[idx] && generatedImages[idx].filter(Boolean).length === 3 && (
+                                {generatedImages[idx] && generatedImages[idx].filter(Boolean).length === scene.illustrationPrompts.length && (
                                   <button 
                                     onClick={() => downloadAllImages(generatedImages[idx], scene.title)}
                                     className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-600 dark:text-indigo-400 hover:text-white rounded-xl transition-all text-xs font-bold uppercase tracking-wider border border-indigo-500/20"

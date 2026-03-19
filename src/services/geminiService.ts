@@ -174,12 +174,14 @@ export async function generateYouTubeScript(blogContent: string): Promise<VideoS
             🎨 Pour chaque scène, fournis :
             1. Un titre de scène ACCROCHEUR (style titre YouTube).
             2. Le script parlé (voix-off) — dynamique et captivant.
-            3. TROIS (3) prompts d'illustration en ANGLAIS qui forment un MINI-SCÉNARIO SÉQUENTIEL :
-               ⚠️ RÈGLE CRITIQUE : Les 3 images racontent une PROGRESSION NARRATIVE du script.
-               - Image 1 = le DÉBUT du discours (situation initiale, question, accroche).
-               - Image 2 = le MILIEU (le problème, la tension, le twist, la révélation).
-               - Image 3 = la FIN (la solution, la réaction, la conclusion).
-               Les 3 images doivent être VISUELLEMENT DIFFÉRENTES : décor différent, pose différente, émotion différente, éléments différents. JAMAIS 3 images similaires.
+            3. Des prompts d'illustration en ANGLAIS — AUTANT QUE NÉCESSAIRE pour illustrer TOUTE la scène :
+               ⚠️ RÈGLE CRITIQUE : Lis le script de la scène et crée UNE IMAGE pour chaque moment clé, idée, ou changement de sujet dans le discours.
+               - Si le script contient 2 idées → 2 images.
+               - Si le script contient 5 moments distincts → 5 images.
+               - Si le script est court et simple → 1 ou 2 images suffisent.
+               - Si le script est long et riche → 4, 5, 6 images ou plus.
+               Le but : chaque image correspond à un PASSAGE PRÉCIS du script. L'ensemble des images raconte visuellement TOUT le contenu de la scène, du début à la fin.
+               Toutes les images doivent être VISUELLEMENT DIFFÉRENTES : décor différent, pose différente, émotion différente, éléments différents. JAMAIS d'images similaires.
 
                Pour chaque prompt (max 3 phrases) :
                - NE PAS inclure de description du personnage principal (ajouté automatiquement).
@@ -209,7 +211,7 @@ export async function generateYouTubeScript(blogContent: string): Promise<VideoS
                   illustrationPrompts: { 
                     type: Type.ARRAY,
                     items: { type: Type.STRING },
-                    description: "Exactly 3 detailed illustration prompts."
+                    description: "Illustration prompts — as many as needed to cover the full scene script. One prompt per key moment/idea in the script."
                   },
                 },
                 required: ["title", "script", "illustrationPrompts"],
@@ -309,7 +311,8 @@ export async function generateCapCutTutorial(
   const totalImages = videoScript.scenes.reduce((sum, s) => sum + s.illustrationPrompts.length, 0);
   const nbScenes = videoScript.scenes.length;
   const avgSceneDuration = Math.round(audioDurationSeconds / nbScenes);
-  const avgImageDuration = Math.round(avgSceneDuration / 3);
+  const avgImagesPerScene = totalImages / nbScenes;
+  const avgImageDuration = Math.round(avgSceneDuration / avgImagesPerScene);
 
   const response = await ai.models.generateContent({
     model,
