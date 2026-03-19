@@ -20,10 +20,21 @@ const getAI = () => {
 export async function generateSpeech(text: string, voiceName: string): Promise<string> {
   const ai = getAI();
   const model = "gemini-2.5-flash-preview-tts";
-  
+
+  // Add expressive speech directives for a more natural, captivating delivery
+  const expressiveText = `Say the following script in a very natural, captivating and dynamic way.
+Speak like a passionate YouTuber who loves their topic.
+Use varied intonation: excited for key points, slightly slower for important revelations, and conversational pauses between ideas.
+Add subtle emphasis on important words. Sound warm, energetic, and genuine — not robotic or monotone.
+The language is French. Speak with a natural French rhythm and flow.
+
+Here is the script to read:
+
+${text}`;
+
   const response = await ai.models.generateContent({
     model,
-    contents: [{ parts: [{ text }] }],
+    contents: [{ parts: [{ text: expressiveText }] }],
     config: {
       responseModalities: [Modality.AUDIO],
       speechConfig: {
@@ -102,21 +113,40 @@ export async function generateYouTubeScript(blogContent: string): Promise<VideoS
         role: "user",
         parts: [
           {
-            text: `Transformez l'article de blog suivant en un script vidéo YouTube de 5 minutes. 
-            Le script doit être engageant, conversationnel et structuré pour une vidéo de 5 minutes.
-            TOUT le contenu généré (titres, scripts, prompts d'illustration) doit être en FRANÇAIS.
-            
-            Pour chaque scène, fournissez :
-            1. Un titre de scène.
-            2. Le script parlé (voix-off).
-            3. TROIS (3) prompts d'illustration extrêmement détaillés qui ILLUSTRENT PRÉCISÉMENT différents moments ou angles de l'action décrits dans le script voix-off. 
-               Chaque image doit être une traduction visuelle directe de ce qui est dit.
-               Le style doit être celui d'une bande dessinée moderne et colorée. 
-               Le personnage principal est TOUJOURS un "stickman" (bonhomme bâton) avec un corps noir filiforme et une tête blanche très expressive. 
-               L'arrière-plan doit être riche en détails, coloré et professionnel.
-               IMPORTANT : Si du texte doit apparaître dans les images (bulles, panneaux, écrans), il doit être écrit avec une orthographe PARFAITE et sans aucune faute.
-            
-            Contenu du Blog :
+            text: `Tu es un SCÉNARISTE YOUTUBE de génie, spécialiste des vidéos virales francophones.
+            Ton style : MrBeast meets Squeezie — ultra-dynamique, captivant dès la première seconde, impossible à quitter.
+
+            TRANSFORME l'article suivant en un script vidéo YouTube de 5 minutes EXPLOSIF.
+
+            🎬 RÈGLES D'OR DU SCRIPT :
+            - ACCROCHE DE FOU : La première phrase doit être un HOOK irrésistible (question choc, stat incroyable, provocation, cliffhanger). Le spectateur doit se dire "QUOI ?! Je DOIS voir la suite".
+            - RYTHME DYNAMIQUE : Alterne entre moments d'énergie pure, révélations surprenantes, pauses dramatiques et touches d'humour. Jamais monotone.
+            - TUTOIEMENT : Parle directement au spectateur comme à un pote. "Tu savais que...?", "Attends, ça va te surprendre...", "Et là... plot twist."
+            - TRANSITIONS PUNCHY : Entre chaque scène, une transition qui relance l'attention ("Mais attends, le meilleur arrive...", "Et c'est là que ça devient dingue...").
+            - STORYTELLING : Raconte une HISTOIRE, pas un cours. Utilise des anecdotes, des exemples concrets, des comparaisons surprenantes.
+            - CLIFFHANGERS MINI : Chaque scène doit donner envie de voir la suivante.
+            - CONCLUSION MÉMORABLE : Termine avec un appel à l'action naturel et une phrase qui reste en tête.
+            - ÉMOTION : Fais ressentir quelque chose — surprise, curiosité, amusement, émerveillement.
+
+            🗣️ STYLE DE VOIX-OFF :
+            - Conversationnel, naturel, comme si tu parlais à quelqu'un en face.
+            - Phrases courtes et percutantes mélangées avec des explications fluides.
+            - Utilise des onomatopées ("Boom!", "Et bam!"), des interjections ("Franchement...", "Genre...").
+            - Varie le rythme : phrases rapides pour l'excitation, phrases lentes pour les révélations.
+
+            TOUT le contenu (titres, scripts, prompts) DOIT être en FRANÇAIS.
+
+            🎨 Pour chaque scène, fournis :
+            1. Un titre de scène ACCROCHEUR (style titre YouTube).
+            2. Le script parlé (voix-off) — dynamique et captivant.
+            3. TROIS (3) prompts d'illustration ultra-détaillés :
+               - Chaque image illustre un moment CLÉ du script voix-off.
+               - Style : bande dessinée moderne, colorée, professionnelle.
+               - Personnage principal : TOUJOURS un "stickman" (bonhomme bâton) noir filiforme avec une tête blanche TRÈS expressive (émotions exagérées).
+               - Arrière-plans riches, détaillés, colorés et cinématiques.
+               - Si du texte apparaît (bulles, panneaux), orthographe PARFAITE.
+
+            📝 Contenu du Blog à transformer :
             ${blogContent}`,
           },
         ],

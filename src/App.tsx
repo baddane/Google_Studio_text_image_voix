@@ -33,16 +33,19 @@ export default function App() {
   const [generatedImages, setGeneratedImages] = useState<Record<number, string[]>>({});
   const [imageLoading, setImageLoading] = useState<Record<number, boolean[]>>({});
   const [imageError, setImageError] = useState<Record<number, (string | null)[]>>({});
-  const [selectedVoice, setSelectedVoice] = useState('Zephyr');
+  const [selectedVoice, setSelectedVoice] = useState('Puck');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioLoading, setAudioLoading] = useState(false);
 
   const voices = [
-    { name: 'Zephyr', desc: 'Calme & Professionnel' },
-    { name: 'Puck', desc: 'Énergique & Jeune' },
-    { name: 'Charon', desc: 'Profond & Narratif' },
-    { name: 'Kore', desc: 'Doux & Informatif' },
-    { name: 'Fenrir', desc: 'Autoritaire & Clair' }
+    { name: 'Puck', desc: 'Énergique & Dynamique — Idéal YouTube', tag: '🔥' },
+    { name: 'Kore', desc: 'Chaleureuse & Captivante', tag: '✨' },
+    { name: 'Charon', desc: 'Profond & Cinématique', tag: '🎬' },
+    { name: 'Zephyr', desc: 'Calme & Professionnel', tag: '💼' },
+    { name: 'Fenrir', desc: 'Autoritaire & Percutant', tag: '⚡' },
+    { name: 'Aoede', desc: 'Expressif & Narratif', tag: '📖' },
+    { name: 'Leda', desc: 'Douce & Engageante', tag: '🎙️' },
+    { name: 'Orus', desc: 'Grave & Magnétique', tag: '🎭' },
   ];
 
   const [isDark, setIsDark] = useState(() => {
@@ -373,9 +376,12 @@ export default function App() {
                                   : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-indigo-500/30'
                               }`}
                             >
-                              <div>
-                                <div className="text-sm font-bold">{voice.name}</div>
-                                <div className="text-[10px] opacity-60">{voice.desc}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-base">{voice.tag}</span>
+                                <div>
+                                  <div className="text-sm font-bold">{voice.name}</div>
+                                  <div className="text-[10px] opacity-60">{voice.desc}</div>
+                                </div>
                               </div>
                               {selectedVoice === voice.name && <Check className="w-4 h-4" />}
                             </button>
