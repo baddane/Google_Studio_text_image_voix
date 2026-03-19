@@ -153,9 +153,13 @@ export async function generateYouTubeScript(blogContent: string, durationMinutes
 
             TRANSFORME l'article suivant en un script vidéo YouTube de ${durationMinutes} minute${durationMinutes > 1 ? 's' : ''} EXPLOSIF.
 
-            📏 LONGUEUR DU SCRIPT : Le script TOTAL (toutes scènes combinées) doit contenir environ ${durationMinutes * 150} mots (environ 150 mots par minute de vidéo). C'est CRUCIAL pour que la voix-off dure bien ${durationMinutes} minute${durationMinutes > 1 ? 's' : ''}.
+            ⚠️⚠️⚠️ CONTRAINTES OBLIGATOIRES — NE PAS IGNORER ⚠️⚠️⚠️
 
-            📐 NOMBRE DE SCÈNES : Tu dois créer entre ${Math.max(2, Math.ceil(durationMinutes * 0.8))} et ${Math.ceil(durationMinutes * 1.5)} scènes (environ 1 scène par minute). JAMAIS seulement 3 scènes si la vidéo fait plus de 4 minutes. Adapte le nombre de scènes à la durée demandée !
+            📏 NOMBRE DE MOTS TOTAL : EXACTEMENT ~${durationMinutes * 150} mots pour le script complet (toutes scènes combinées). 150 mots = 1 minute de voix-off.
+
+            📐 NOMBRE DE SCÈNES : EXACTEMENT ${Math.max(2, Math.round(durationMinutes))} scènes. PAS 3. PAS 2. EXACTEMENT ${Math.max(2, Math.round(durationMinutes))} scènes.
+
+            🖼️ NOMBRE D'IMAGES PAR SCÈNE : Entre 3 et 6 images par scène. Chaque scène contient PLUSIEURS idées = PLUSIEURS images. JAMAIS 1 seule image par scène.
 
             🎬 RÈGLES D'OR DU SCRIPT :
             - ACCROCHE DE FOU : La première phrase doit être un HOOK irrésistible (question choc, stat incroyable, provocation, cliffhanger). Le spectateur doit se dire "QUOI ?! Je DOIS voir la suite".
@@ -175,29 +179,16 @@ export async function generateYouTubeScript(blogContent: string, durationMinutes
 
             TOUT le contenu (titres, scripts, prompts) DOIT être en FRANÇAIS.
 
-            🎨 Pour chaque scène, fournis :
+            🎨 Pour CHACUNE des ${Math.max(2, Math.round(durationMinutes))} scènes, fournis :
             1. Un titre de scène ACCROCHEUR (style titre YouTube).
-            2. Le script parlé (voix-off) — dynamique et captivant.
-            3. Des prompts d'illustration en ANGLAIS — ⚠️ PAS 3 IMAGES PAR DÉFAUT ! Le nombre d'images VARIE selon la scène :
-
-               📐 MÉTHODE OBLIGATOIRE POUR DÉTERMINER LE NOMBRE D'IMAGES :
-               - Découpe le script de la scène en PHRASES ou GROUPES DE PHRASES qui abordent chacun UNE idée distincte.
-               - Crée EXACTEMENT 1 prompt d'illustration PAR idée/moment identifié.
-               - Résultat attendu : entre 2 et 8 images par scène selon la longueur et la richesse du script.
-
-               ❌ INTERDIT : Toujours mettre 3 images. C'est FAUX si le script contient plus ou moins de 3 idées.
-               ✅ CORRECT : Compter les idées distinctes dans le script et créer autant de prompts.
-
-               Exemple : Si le script dit "D'abord on parle de X. Ensuite Y arrive. Puis Z se passe. Et enfin W conclut." → 4 images (une par idée).
-
-               Chaque image = un PASSAGE PRÉCIS du script. L'ensemble couvre TOUT le contenu de la scène.
-               Toutes les images doivent être VISUELLEMENT DIFFÉRENTES : décor, pose, émotion, éléments différents.
-
-               Pour chaque prompt (2-3 phrases max par prompt) :
-               - NE PAS inclure de description du personnage principal (ajouté automatiquement).
-               - Décris : l'action PRÉCISE, le décor, la pose/émotion du personnage, les éléments visuels.
-               - Inclure UN SEUL MOT EN FRANÇAIS comme texte doodle — le mot le plus pertinent et percutant selon le contexte du script (ex: une émotion, une réaction, un mot-clé du sujet). MAXIMUM 1 mot, jamais plus. Pas de phrase, pas de mot composé.
-               - Style : doodle art, croquis dessiné à la main, traits noirs sur fond blanc/coloré.
+            2. Le script parlé (voix-off) — ~${Math.round((durationMinutes * 150) / Math.max(2, Math.round(durationMinutes)))} mots par scène.
+            3. Entre 3 et 6 prompts d'illustration EN ANGLAIS par scène :
+               - Découpe le script de la scène par idée distincte → 1 prompt par idée.
+               - Chaque prompt décrit : action précise, décor, pose/émotion, éléments visuels (2-3 phrases).
+               - NE PAS décrire le personnage principal (ajouté automatiquement).
+               - Inclure UN SEUL MOT FRANÇAIS comme texte doodle (ex: "RÊVE", "BOOM"). Max 1 mot, 3-6 lettres.
+               - Style : doodle art, croquis dessiné à la main, traits noirs.
+               - Toutes les images doivent être VISUELLEMENT DIFFÉRENTES.
 
             📝 Contenu du Blog à transformer :
             ${blogContent}`,
@@ -213,15 +204,16 @@ export async function generateYouTubeScript(blogContent: string, durationMinutes
             totalEstimatedDuration: { type: Type.STRING },
             scenes: {
               type: Type.ARRAY,
+              description: `EXACTLY ${Math.max(2, Math.round(durationMinutes))} scene objects in this array. Not 3, not 2 — exactly ${Math.max(2, Math.round(durationMinutes))}.`,
               items: {
                 type: Type.OBJECT,
                 properties: {
                   title: { type: Type.STRING },
-                  script: { type: Type.STRING },
-                  illustrationPrompts: { 
+                  script: { type: Type.STRING, description: `This scene script must contain approximately ${Math.round((durationMinutes * 150) / Math.max(2, Math.round(durationMinutes)))} words.` },
+                  illustrationPrompts: {
                     type: Type.ARRAY,
                     items: { type: Type.STRING },
-                    description: "VARIABLE number of illustration prompts (2 to 8). One prompt per distinct idea/moment in the scene script. Do NOT default to 3 — count the actual ideas in the script."
+                    description: "Between 3 and 6 illustration prompts. One per distinct idea in the scene. NEVER only 1 prompt per scene."
                   },
                 },
                 required: ["title", "script", "illustrationPrompts"],
