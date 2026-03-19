@@ -155,6 +155,8 @@ export async function generateYouTubeScript(blogContent: string, durationMinutes
 
             📏 LONGUEUR DU SCRIPT : Le script TOTAL (toutes scènes combinées) doit contenir environ ${durationMinutes * 150} mots (environ 150 mots par minute de vidéo). C'est CRUCIAL pour que la voix-off dure bien ${durationMinutes} minute${durationMinutes > 1 ? 's' : ''}.
 
+            📐 NOMBRE DE SCÈNES : Tu dois créer entre ${Math.max(2, Math.ceil(durationMinutes * 0.8))} et ${Math.ceil(durationMinutes * 1.5)} scènes (environ 1 scène par minute). JAMAIS seulement 3 scènes si la vidéo fait plus de 4 minutes. Adapte le nombre de scènes à la durée demandée !
+
             🎬 RÈGLES D'OR DU SCRIPT :
             - ACCROCHE DE FOU : La première phrase doit être un HOOK irrésistible (question choc, stat incroyable, provocation, cliffhanger). Le spectateur doit se dire "QUOI ?! Je DOIS voir la suite".
             - RYTHME DYNAMIQUE : Alterne entre moments d'énergie pure, révélations surprenantes, pauses dramatiques et touches d'humour. Jamais monotone.
