@@ -143,7 +143,7 @@ export async function generateYouTubeScript(blogContent: string): Promise<VideoS
                - Chaque prompt décrit UNE ACTION ou UNE SCÈNE précise du script.
                - NE PAS inclure de description du personnage principal (il sera ajouté automatiquement).
                - Décris : l'action, le décor, l'ambiance, les éléments visuels autour du personnage.
-               - Inclure UN MOT-CLÉ ou UNE COURTE PHRASE en rapport avec la scène qui sera affiché comme texte doodle dans l'image (ex: "BOOM!", "Wait what?!", "Mind = Blown", "Le saviez-vous?").
+               - Inclure UN MOT-CLÉ ou UNE COURTE PHRASE EN FRANÇAIS sans faute d'orthographe, en rapport avec la scène, qui sera affiché comme texte doodle dans l'image (ex: "INCROYABLE !", "Quoi ?!", "Astuce !", "Le saviez-vous ?").
                - Style : doodle art, croquis dessiné à la main, traits noirs sur fond blanc/coloré.
 
             📝 Contenu du Blog à transformer :
@@ -219,7 +219,7 @@ DOODLE ART STYLE RULES:
 - Hand-drawn sketch aesthetic with bold black ink outlines on a clean white or lightly colored background.
 - Playful hand-drawn elements around the character: arrows, stars, exclamation marks, underlines, small icons, squiggles.
 - Whimsical, fun, energetic feel — like a YouTuber's whiteboard or notebook doodles.
-- Include small doodle text annotations related to the scene (keywords, reactions, fun labels) written in a handwritten font style.
+- Include small doodle text annotations IN FRENCH with perfect spelling, related to the scene (keywords, reactions, fun labels) written in a handwritten font style. All text MUST be in French without any spelling mistakes.
 - Selective color pops: use vibrant accent colors (red, blue, yellow) sparingly to highlight key elements against the mostly black & white sketch.
 - The character must look CONSISTENT across all images: same hair, same glasses, same drawing style.
 - Clean composition, not cluttered. White space is important in doodle art.
