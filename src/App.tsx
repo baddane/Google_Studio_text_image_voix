@@ -24,7 +24,8 @@ import {
   Film,
   ChevronDown,
   ChevronUp,
-  Scissors
+  Scissors,
+  Package
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -172,6 +173,82 @@ export default function App() {
       setError("Erreur lors de la génération de l'audio.");
     } finally {
       setAudioLoading(false);
+    }
+  };
+
+  const handleDownloadAll = () => {
+    if (!videoScript) return;
+    const slug = videoScript.title.replace(/\s+/g, '-').toLowerCase();
+    let delay = 0;
+
+    // 1. Download script as .txt
+    const scriptContent = `${videoScript.title}\nDurée estimée : ${videoScript.totalEstimatedDuration}\n\n` +
+      videoScript.scenes.map((s, i) =>
+        `=== SCÈNE ${i + 1} : ${s.title} ===\n\n${s.script}\n\nPrompts illustrations :\n${s.illustrationPrompts.map((p, j) => `  ${j + 1}. ${p}`).join('\n')}`
+      ).join('\n\n---\n\n');
+    const scriptBlob = new Blob([scriptContent], { type: 'text/plain;charset=utf-8' });
+    const scriptUrl = URL.createObjectURL(scriptBlob);
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = scriptUrl;
+      a.download = `${slug}-script.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(scriptUrl);
+    }, delay);
+    delay += 300;
+
+    // 2. Download audio if available
+    if (audioUrl) {
+      setTimeout(() => {
+        const a = document.createElement('a');
+        a.href = audioUrl;
+        a.download = `${slug}-voix.wav`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, delay);
+      delay += 300;
+    }
+
+    // 3. Download all generated images
+    (Object.entries(generatedImages) as [string, string[]][]).forEach(([sceneIdx, images]) => {
+      const scene = videoScript.scenes[Number(sceneIdx)];
+      if (!scene) return;
+      images.forEach((img: string, imgIdx: number) => {
+        if (img) {
+          setTimeout(() => {
+            const a = document.createElement('a');
+            a.href = img;
+            a.download = `${slug}-scene${Number(sceneIdx) + 1}-img${imgIdx + 1}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }, delay);
+          delay += 200;
+        }
+      });
+    });
+
+    // 4. Download CapCut tutorial if available
+    if (capCutTutorial) {
+      const tutoContent = `TUTO CAPCUT — ${videoScript.title}\n\n${capCutTutorial.intro}\n\n` +
+        capCutTutorial.steps.map((step, i) =>
+          `--- ÉTAPE ${i + 1} : ${step.title} ---\n${step.instructions.join('\n')}\n💡 Astuce : ${step.tip}`
+        ).join('\n\n') +
+        `\n\n=== RÉCAP TIMELINE ===\n${capCutTutorial.timelineRecap.join('\n')}`;
+      const tutoBlob = new Blob([tutoContent], { type: 'text/plain;charset=utf-8' });
+      const tutoUrl = URL.createObjectURL(tutoBlob);
+      setTimeout(() => {
+        const a = document.createElement('a');
+        a.href = tutoUrl;
+        a.download = `${slug}-tuto-capcut.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(tutoUrl);
+      }, delay);
     }
   };
 
@@ -325,6 +402,16 @@ export default function App() {
                       </span>
                     </div>
                     <h2 className="text-4xl font-display font-bold tracking-tight text-slate-900 dark:text-white">{videoScript?.title}</h2>
+                    <button
+                      onClick={handleDownloadAll}
+                      className="w-full mt-4 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-lg shadow-emerald-500/20 text-sm uppercase tracking-widest"
+                    >
+                      <Package className="w-5 h-5" />
+                      Tout Télécharger
+                      <span className="text-[10px] font-normal opacity-70 lowercase tracking-normal">
+                        (script{audioUrl ? ' + audio' : ''}{Object.keys(generatedImages).length > 0 ? ' + images' : ''}{capCutTutorial ? ' + tuto' : ''})
+                      </span>
+                    </button>
                   </div>
 
                   {/* Script Complet */}
