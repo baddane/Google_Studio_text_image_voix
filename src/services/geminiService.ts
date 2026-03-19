@@ -237,7 +237,39 @@ export async function generateYouTubeScript(blogContent: string, durationMinutes
     }
 
     console.log("Script generation successful");
-    return JSON.parse(text);
+    const parsed: VideoScript = JSON.parse(text);
+
+    // Post-processing: ensure each scene has at least 3 illustration prompts
+    // Gemini flash-lite tends to be lazy and return only 1 prompt per scene
+    for (const scene of parsed.scenes) {
+      if (scene.illustrationPrompts.length < 3) {
+        // Split the script into sentences to generate additional prompts
+        const sentences = scene.script
+          .split(/(?<=[.!?])\s+/)
+          .filter(s => s.trim().length > 10);
+
+        const targetCount = Math.min(Math.max(3, Math.ceil(sentences.length / 2)), 6);
+
+        if (scene.illustrationPrompts.length < targetCount) {
+          // Group sentences into chunks and create prompts
+          const chunkSize = Math.ceil(sentences.length / targetCount);
+          const newPrompts: string[] = [];
+          for (let i = 0; i < sentences.length; i += chunkSize) {
+            const chunk = sentences.slice(i, i + chunkSize).join(' ');
+            // Extract a key french word for the doodle text
+            const words = chunk.split(/\s+/).filter(w => w.length >= 4 && w.length <= 8);
+            const keyword = words[Math.floor(words.length / 2)]?.replace(/[^a-zA-ZÀ-ÿ]/g, '').toUpperCase() || 'IDÉE';
+            newPrompts.push(
+              `Scene depicting: ${chunk.substring(0, 120)}. Doodle style, hand-drawn sketch, black ink on white background. Text: ${keyword}`
+            );
+          }
+          scene.illustrationPrompts = newPrompts.slice(0, targetCount);
+        }
+      }
+    }
+
+    console.log(`Post-processing: ${parsed.scenes.length} scenes, prompts per scene: [${parsed.scenes.map(s => s.illustrationPrompts.length).join(', ')}]`);
+    return parsed;
   } catch (error) {
     console.error("Script generation error:", error);
     throw error;
