@@ -18,10 +18,11 @@ export interface SessionCost {
 }
 
 // Pricing per 1M tokens (USD) — source: https://ai.google.dev/gemini-api/docs/pricing
+// Image output uses special rate: 1290 tokens/image at ~$30/1M = $0.039/image
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   'gemini-3.1-flash-lite-preview': { input: 0.25, output: 1.50 },
   'gemini-2.5-flash-preview-tts':  { input: 0.30, output: 2.50 },
-  'gemini-2.5-flash-image':        { input: 0.30, output: 2.50 },
+  'gemini-2.5-flash-image':        { input: 0.30, output: 30.00 }, // image output: ~$0.039/image (1290 tok)
   'gemini-2.5-flash':              { input: 0.30, output: 2.50 },
 };
 
@@ -247,8 +248,8 @@ export async function generateYouTubeScript(blogContent: string, durationMinutes
             🎨 Pour CHACUNE des ${Math.max(2, Math.round(durationMinutes))} scènes, fournis :
             1. Un titre de scène ACCROCHEUR (style titre YouTube).
             2. Le script parlé (voix-off) — ~${Math.round((durationMinutes * 150) / Math.max(2, Math.round(durationMinutes)))} mots par scène.
-            3. Entre 3 et 6 prompts d'illustration EN ANGLAIS par scène :
-               - Découpe le script de la scène par idée distincte → 1 prompt par idée.
+            3. EXACTEMENT 3 prompts d'illustration EN ANGLAIS par scène (ni plus, ni moins) :
+               - Découpe le script de la scène en 3 idées/moments clés → 1 prompt par idée.
                - ⚠️ CHAQUE PROMPT DOIT ÊTRE ULTRA-SPÉCIFIQUE au contenu du script à cet instant précis. Pas de description générique !
                - Cite les ÉLÉMENTS CONCRETS mentionnés dans le script : chiffres, objets, concepts, lieux, actions spécifiques.
                - Exemple MAUVAIS : "A woman looking excited about technology" (trop vague)
@@ -282,7 +283,7 @@ export async function generateYouTubeScript(blogContent: string, durationMinutes
                   illustrationPrompts: {
                     type: Type.ARRAY,
                     items: { type: Type.STRING },
-                    description: "Between 3 and 6 illustration prompts. One per distinct idea in the scene. NEVER only 1 prompt per scene."
+                    description: "EXACTLY 3 illustration prompts per scene. One per key moment/idea. Always 3, never more, never less."
                   },
                 },
                 required: ["title", "script", "illustrationPrompts"],
