@@ -819,6 +819,27 @@ export default function App() {
                                       </motion.div>
                                     )}
                                   </AnimatePresence>
+
+                                  {/* Animation Prompt for Meta AI */}
+                                  {scene.animationPrompts?.[imgIdx] && (
+                                    <div className="mt-3 p-3 rounded-xl bg-purple-500/5 border border-purple-500/10">
+                                      <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-[8px] font-bold text-purple-400 uppercase tracking-[0.2em] flex items-center gap-1.5">
+                                          <Film className="w-3 h-3" />
+                                          Prompt Animation Meta AI
+                                        </span>
+                                        <button
+                                          onClick={() => copyToClipboard(scene.animationPrompts[imgIdx], 1000 + idx * 10 + imgIdx)}
+                                          className="p-1.5 hover:bg-purple-500/10 rounded-lg transition-all text-purple-300 hover:text-purple-500"
+                                        >
+                                          {copiedIndex === 1000 + idx * 10 + imgIdx ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                        </button>
+                                      </div>
+                                      <p className="text-purple-400/70 text-[11px] leading-relaxed italic">
+                                        "{scene.animationPrompts[imgIdx]}"
+                                      </p>
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>

@@ -68,6 +68,7 @@ export interface Scene {
   title: string;
   script: string;
   illustrationPrompts: string[];
+  animationPrompts: string[];
 }
 
 export interface VideoScript {
@@ -260,6 +261,14 @@ export async function generateYouTubeScript(blogContent: string, durationMinutes
                - Style : doodle art, croquis dessiné à la main, traits noirs.
                - Toutes les images doivent être VISUELLEMENT DIFFÉRENTES et refléter des moments DIFFÉRENTS du script.
 
+            🎬 Pour CHAQUE prompt d'illustration, fournis aussi un PROMPT D'ANIMATION EN ANGLAIS (pour Meta AI / vidéo IA) :
+               - Le prompt d'animation décrit le MOUVEMENT à appliquer à l'image fixe pour en faire un clip vidéo de 5-8 secondes.
+               - Décris : direction du mouvement de caméra (zoom in/out, pan left/right, tilt), mouvements des éléments (flottement, apparition progressive, rotation), ambiance dynamique.
+               - Assure la CONTINUITÉ entre les animations d'une même scène (ex: si la caméra zoom in sur l'image 1, elle peut pan sur l'image 2, puis zoom out sur l'image 3).
+               - Style : cinématique, fluide, transitions naturelles.
+               - Exemple : "Slow zoom in on the character while floating icons gently drift upward, subtle light flares appear from the right side, camera slightly tilts to the left for dramatic effect"
+               - ⚠️ Les prompts d'animation doivent correspondre 1-à-1 avec les prompts d'illustration (même ordre, même nombre).
+
             📝 Contenu du Blog à transformer :
             ${blogContent}`,
           },
@@ -285,8 +294,13 @@ export async function generateYouTubeScript(blogContent: string, durationMinutes
                     items: { type: Type.STRING },
                     description: "EXACTLY 3 illustration prompts per scene. One per key moment/idea. Always 3, never more, never less."
                   },
+                  animationPrompts: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                    description: "EXACTLY 3 animation prompts per scene (1-to-1 with illustrationPrompts). Each describes camera movement, element motion, and cinematic effects to animate the corresponding image into a 5-8s video clip."
+                  },
                 },
-                required: ["title", "script", "illustrationPrompts"],
+                required: ["title", "script", "illustrationPrompts", "animationPrompts"],
               },
             },
           },
